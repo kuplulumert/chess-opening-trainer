@@ -9,9 +9,10 @@ workflows:
       # then set this to whatever name you gave it.
       app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.kuplulumert.openingtrainer
+      # Signing is handled by the "Set up iOS code signing" script below
+      # (app-store-connect fetch-signing-files --create), not Codemagic's
+      # declarative ios_signing — that pre-flight check fails outright on a
+      # bundle ID with no existing profile yet, before any script gets to run.
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
