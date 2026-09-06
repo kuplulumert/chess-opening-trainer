@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Claude Code session-local state (not part of the project)
+.claude/scheduled_tasks.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
