@@ -15,13 +15,14 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: com.kuplulumert.openingtrainer
       node: 22.14.0
       xcode: latest
     triggering:
       events:
         - push
       branch_patterns:
-        - pattern: main
+        - pattern: master
           include: true
           source: true
     scripts:
@@ -38,9 +39,6 @@ workflows:
           cd ios/App
           LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$BUNDLE_ID" || echo 0)
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
-        env:
-          vars:
-            BUNDLE_ID: com.kuplulumert.openingtrainer
       - name: Build the .ipa for distribution
         script: |
           xcode-project build-ipa \
