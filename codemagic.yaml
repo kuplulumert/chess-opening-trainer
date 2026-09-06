@@ -33,7 +33,17 @@ workflows:
       - name: Capacitor sync (copies dist/ into the iOS project)
         script: npx cap sync ios
       - name: Set up iOS code signing
-        script: xcode-project use-profiles
+        script: |
+          keychain initialize
+          # First run: no distribution certificate or App Store provisioning
+          # profile exists yet for this bundle ID, so create them; later runs
+          # just reuse whatever already exists.
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --platform IOS \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Bump the build number to the next TestFlight build
         script: |
           cd ios/App
