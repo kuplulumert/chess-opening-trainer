@@ -22,6 +22,10 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: com.kuplulumert.openingtrainer
+        # App Store Connect's numeric Apple ID for this app (from its URL:
+        # appstoreconnect.apple.com/apps/<this>/...) — get-latest-build-number
+        # needs this, not the bundle identifier.
+        APP_STORE_CONNECT_APP_ID: "6809224647"
       node: 22.14.0
       xcode: latest
     triggering:
@@ -54,7 +58,11 @@ workflows:
       - name: Bump the build number to the next TestFlight build
         script: |
           cd ios/App
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$BUNDLE_ID" || echo 0)
+          # get-latest-build-number takes App Store Connect's numeric app ID,
+          # not the bundle identifier — using the wrong one 404s, and the old
+          # silent `|| echo 0` fallback masked that by always resetting to 1,
+          # which then got rejected as a duplicate on upload.
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_CONNECT_APP_ID" --platform IOS --all-versions)
           agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
       - name: Build the .ipa for distribution
         script: |
