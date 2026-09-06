@@ -1,0 +1,89 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [claude/chess-opening-app-qeaomu, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish; queue at most one more.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      # On the legacy "deploy from a branch" source, GitHub's own builder
+      # publishes the unbuilt repository root and races this workflow on every
+      # push. Switching the source needs repo admin rights, which GITHUB_TOKEN
+      # does not have, so try and then say plainly what a human has to click.
+      - name: Check the Pages source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build_type=$(gh api "repos/${{ github.repository }}/pages" --jq .build_type || echo unknown)
+          echo "Pages build_type: $build_type"
+          if [ "$build_type" = workflow ]; then
+            exit 0
+          fi
+          gh api -X PUT "repos/${{ github.repository }}/pages" -f build_type=workflow \
+            && echo "Switched the Pages source to GitHub Actions." \
+            || echo "::warning::Pages source is '$build_type', not 'workflow', so GitHub's branch builder will keep overwriting this deployment with the unbuilt sources. Set Settings -> Pages -> Source to 'GitHub Actions'."
+
+      - uses: actions/configure-pages@v5
+        with:
+          # Turn Pages on for the repository if it isn't already.
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Safety net for as long as the Pages source stays "Deploy from a branch":
+  # GitHub's own legacy builder also runs on every push, needs no build step,
+  # and has been observed finishing 10-45s after the job above — overwriting
+  # this workflow's built site with the raw repository root. Re-publish the
+  # same artifact once that builder has had time to finish, so this build is
+  # what ends up live regardless of which one wins the race. Once the source
+  # is switched to "GitHub Actions" (see the warning in the build job above),
+  # the legacy builder stops running entirely and this job becomes a no-op
+  # safety net that can be deleted.
+  reclaim:
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - run: sleep 90
+      - id: deployment
+        uses: actions/deploy-pages@v4

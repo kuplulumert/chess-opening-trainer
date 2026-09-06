@@ -1,0 +1,913 @@
+/* ---------- View switcher (Trainer / Skill Map) ---------- */
+
+.view-switcher {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.view-switcher button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.view-switcher button:hover {
+  border-color: var(--accent);
+}
+
+.view-switcher button.view-switcher-active {
+  background: var(--accent);
+  color: var(--panel-bg);
+  border-color: var(--accent);
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  gap: 20px;
+  min-height: 100svh;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  align-items: start;
+}
+
+/* ---------- How-to-use banner ---------- */
+
+.how-to-use {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--info-bg);
+  border: 1px solid var(--info);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.how-to-use-text {
+  font-size: 13px;
+  color: var(--text-h);
+  line-height: 1.5;
+}
+
+.how-to-use-dismiss {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--info);
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.how-to-use-dismiss:hover {
+  background: rgba(var(--info-rgb), 0.18);
+}
+
+/* Sits inside the view-switcher bar itself instead of opening its own
+   bordered area below it. */
+.how-to-use-inline {
+  grid-column: unset;
+  flex: 1 1 260px;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  gap: 10px;
+}
+
+.how-to-use-inline .how-to-use-text {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.how-to-use-inline .how-to-use-dismiss {
+  color: var(--text-muted);
+}
+
+.how-to-use-inline .how-to-use-dismiss:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+/* ---------- Sidebar ---------- */
+
+.sidebar {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100svh - 40px);
+  position: sticky;
+  top: 20px;
+}
+
+.sidebar-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-header h1 {
+  font-size: 18px;
+}
+
+.sidebar-subtitle {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.sidebar-header-toggles {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle,
+.language-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.language-toggle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.theme-toggle:hover,
+.language-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.finder-trigger {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.finder-trigger:hover {
+  border-color: var(--accent);
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+}
+
+.search-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.opening-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.opening-group-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-h);
+  margin: 14px 0 6px;
+  padding-left: 4px;
+}
+
+.opening-group:first-child .opening-group-title {
+  margin-top: 0;
+}
+
+.opening-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opening-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+}
+
+.opening-item:hover {
+  background: var(--accent-bg);
+}
+
+/* Also styled on :hover so a stronger, solid highlight (matching the
+   Play as/Mode segmented control) can't be overridden by the plain
+   :hover rule above, which otherwise wins on specificity when the
+   selected item itself is hovered. */
+.opening-item-active,
+.opening-item-active:hover {
+  background: var(--accent);
+  color: var(--panel-bg);
+  font-weight: 700;
+}
+
+.opening-eco {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 28px;
+}
+
+.opening-item-active .opening-eco {
+  color: var(--panel-bg);
+  opacity: 0.85;
+}
+
+.opening-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opening-mastered {
+  color: var(--success);
+  font-size: 12px;
+}
+
+.opening-item-active .opening-mastered {
+  color: var(--panel-bg);
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 4px;
+}
+
+/* ---------- Board column ---------- */
+
+.board-column {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 8px;
+}
+
+.board-stage {
+  position: relative;
+  width: min(100%, 640px);
+}
+
+.board-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+/* Move explanations, anchored to the square the color just played — white
+   always to the left of its square, black always to the right, so the two
+   never land on the same side. They sit on top of (not inside) the board
+   so the full sentence isn't clipped by its rounded corners, and fade out
+   the instant the trainee touches a piece to make their own move. */
+.board-annotation {
+  position: absolute;
+  z-index: 5;
+  width: max(170px, 36%);
+  max-width: 280px;
+  transform: translateY(-50%);
+  padding: 8px 11px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  animation: board-annotation-in 200ms ease;
+}
+
+@keyframes board-annotation-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.board-annotation-white {
+  background: var(--panel-bg);
+  border: 1px solid var(--white-side);
+  border-right: 3px solid var(--white-side);
+  color: var(--text-h);
+}
+
+.board-annotation-black {
+  background: var(--panel-bg);
+  border: 1px solid var(--black-side);
+  border-left: 3px solid var(--black-side);
+  color: var(--text-h);
+}
+
+.board-shake {
+  animation: shake 0.32s;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+/* ---------- Info panel ---------- */
+
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 20px;
+}
+
+.info-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.info-card h2 {
+  font-size: 17px;
+}
+
+.info-eco {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.opening-name-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.opening-name-wrap h2 {
+  cursor: help;
+  border-bottom: 1px dashed var(--text-muted);
+  width: fit-content;
+}
+
+.opening-description-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  width: max-content;
+  max-width: 260px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.opening-name-wrap:hover .opening-description-tooltip,
+.opening-name-wrap:focus-visible .opening-description-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.move-purpose {
+  background: var(--info-bg);
+  border-left: 4px solid var(--info);
+  transition:
+    background-color 600ms ease,
+    box-shadow 600ms ease;
+}
+
+.move-purpose .moves-title {
+  color: var(--info);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.move-purpose-flash {
+  background: var(--accent-bg);
+  border-left-color: var(--accent);
+  transition: none;
+}
+
+.move-purpose-text {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-h);
+  line-height: 1.5;
+}
+
+/* Pulses only while the trainee actually has to pick the next move, so
+   their eye is drawn here before they play — not during auto-played
+   moves or once the line is finished. Slow, and alternates between two
+   genuinely different hues (info blue <-> accent green) rather than just
+   varying one color's opacity, so the shift reads clearly at a glance. */
+.move-purpose-attention {
+  animation: move-purpose-pulse 3.2s ease-in-out infinite;
+}
+
+@keyframes move-purpose-pulse {
+  0%,
+  100% {
+    background-color: var(--info-bg);
+    border-left-color: var(--info);
+    box-shadow: var(--shadow), 0 0 0 0 rgba(var(--info-rgb), 0);
+  }
+  50% {
+    background-color: rgba(var(--accent-rgb), 0.4);
+    border-left-color: var(--accent);
+    box-shadow: var(--shadow), 0 0 24px 6px rgba(var(--accent-rgb), 0.65);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .move-purpose-attention {
+    animation: none;
+  }
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.control-row:last-of-type {
+  margin-bottom: 14px;
+}
+
+.control-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 12px;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.segmented button + button {
+  border-left: 1px solid var(--border);
+}
+
+.segmented button.segmented-active {
+  background: var(--accent);
+  color: var(--panel-bg);
+  font-weight: 700;
+}
+
+.segmented-active + button,
+button + .segmented-active {
+  border-left-color: transparent;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
+.button-row:not(:first-child) {
+  margin-top: 12px;
+}
+
+.secondary-button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 13px;
+}
+
+.secondary-button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.secondary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-card {
+  min-height: 20px;
+}
+
+.progress-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.progress-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 6px 0 10px;
+}
+
+.status-line {
+  font-size: 13px;
+  color: var(--text-h);
+}
+
+.status-done {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.hint-line {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
+.hint-line-muted {
+  color: var(--text-muted);
+}
+
+.extend-offer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.extend-offer-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.moves-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.moves-list {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text);
+  word-break: break-word;
+}
+
+/* ---------- Strategy text ---------- */
+
+.strategy-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.strategy-card-white {
+  background: var(--white-side-bg);
+  border-left: 4px solid var(--white-side);
+}
+
+.strategy-card-white .moves-title {
+  color: var(--white-side);
+}
+
+.strategy-card-black {
+  background: var(--black-side-bg);
+  border-left: 4px solid var(--black-side);
+}
+
+.strategy-card-black .moves-title {
+  color: var(--black-side);
+}
+
+.strategy-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+}
+
+.strategy-toggle .moves-title {
+  margin-bottom: 0;
+}
+
+.strategy-chevron {
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: inherit;
+}
+
+.strategy-card-white .strategy-text,
+.strategy-card-black .strategy-text {
+  margin-top: 8px;
+}
+
+/* ---------- Opening Finder ---------- */
+
+.finder-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+
+.finder-modal {
+  width: min(480px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.finder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.finder-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.finder-close:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.finder-step {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+
+.finder-question {
+  font-size: 18px;
+  margin-top: 6px;
+  margin-bottom: 16px;
+}
+
+.finder-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finder-option {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.finder-option:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.finder-back {
+  margin-top: 18px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.finder-back:hover {
+  color: var(--text-h);
+  border-color: var(--accent);
+}
+
+.finder-results {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finder-result-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.finder-result-card .secondary-button {
+  flex: 0 0 auto;
+}
+
+.finder-result-eco {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.finder-result-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin-top: 2px;
+}
+
+.finder-result-desc {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.finder-no-match {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 240px minmax(0, 1fr) 280px;
+  }
+}
+
+/* The dedicated "Openings" tab only exists on narrow layouts — on wide
+   screens the sidebar is already visible alongside the board, so the
+   nav button that would otherwise duplicate it stays hidden. */
+@media (min-width: 861px) {
+  .view-switcher-openings {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .info-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .board-column {
+    order: -1;
+  }
+
+  .how-to-use {
+    order: -2;
+  }
+
+  /* Trainer tab: board first, then the move explanation/hints in the
+     info panel right underneath it — the opening list lives on its own
+     tab instead of pushing the info panel down the page. */
+  .app-shell[data-mobile-view="trainer"] .sidebar {
+    display: none;
+  }
+
+  /* Openings tab: just the opening list (with its language/theme
+     toggles), full width. */
+  .app-shell[data-mobile-view="openings"] .board-column,
+  .app-shell[data-mobile-view="openings"] .info-panel {
+    display: none;
+  }
+}

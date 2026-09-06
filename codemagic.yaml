@@ -1,0 +1,58 @@
+workflows:
+  ios-app-store:
+    name: iOS App Store
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # Name of the App Store Connect API key integration configured under
+      # Codemagic Teams > Integrations > App Store Connect. Create it there,
+      # then set this to whatever name you gave it.
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.kuplulumert.openingtrainer
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: 22.14.0
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+      - name: Build the web app (root-relative paths for the iOS bundle)
+        script: npm run build:ios
+      - name: Capacitor sync (copies dist/ into the iOS project)
+        script: npx cap sync ios
+      - name: Set up iOS code signing
+        script: xcode-project use-profiles
+      - name: Bump the build number to the next TestFlight build
+        script: |
+          cd ios/App
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$BUNDLE_ID" || echo 0)
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+        env:
+          vars:
+            BUNDLE_ID: com.kuplulumert.openingtrainer
+      - name: Build the .ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # Flip this to true once you're ready to send a build straight to
+        # App Store review instead of just TestFlight.
+        submit_to_app_store: false
