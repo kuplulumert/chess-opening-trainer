@@ -5,9 +5,10 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       # Name of the App Store Connect API key integration configured under
-      # Codemagic Teams > Integrations > App Store Connect. Create it there,
-      # then set this to whatever name you gave it.
-      app_store_connect: codemagic
+      # Codemagic Teams > Integrations > Developer Portal. Needs Admin
+      # access — App Manager can't create distribution certificates/profiles,
+      # which fetch-signing-files below needs to do on the very first build.
+      app_store_connect: codemagic-admin
     environment:
       # Signing is handled by the "Set up iOS code signing" script below
       # (app-store-connect fetch-signing-files --create), not Codemagic's
