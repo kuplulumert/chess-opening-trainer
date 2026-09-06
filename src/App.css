@@ -317,6 +317,18 @@
   overflow: hidden;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+  /* Stop the browser's/WKWebView's own touch handling (long-press callout,
+     native image drag, text selection) from competing with dragging a
+     piece — the board only ever needs the library's own pointer-based
+     drag, never a native one. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.board-wrap * {
+  -webkit-user-drag: none;
 }
 
 /* Move explanations, anchored to the square the color just played — white

@@ -7,4 +7,7 @@ export default defineConfig({
   // repository name as their base path. Override with BASE_PATH when hosting elsewhere.
   base: process.env.BASE_PATH ?? '/chess/',
   plugins: [react()],
+  server: {
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
+  },
 })
