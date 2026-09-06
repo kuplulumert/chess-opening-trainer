@@ -110,22 +110,30 @@ One-time setup, all done from a browser:
    `localStorage` and talks to no server, so the privacy questionnaire is "data not
    collected").
 3. **App Store Connect API key** — in App Store Connect under *Users and Access →
-   Integrations → App Store Connect API*, generate a key with the *App Manager*
-   role and download it.
+   Integrations → App Store Connect API*, generate a key with the **Admin** role
+   (not App Manager — creating distribution certificates/profiles requires it) and
+   download the `.p8` file immediately (Apple only allows the one download).
 4. **Codemagic** — sign up at [codemagic.io](https://codemagic.io), connect this
-   GitHub repo, then under *Team settings → Integrations → App Store Connect* add
-   the API key from step 3 (name it `codemagic` to match `codemagic.yaml`, or update
-   the file to match whatever name you pick). Codemagic auto-manages signing
-   certificates and provisioning profiles through that same key — no manual
-   certificate wrangling needed.
-5. **Run the workflow** — in Codemagic, start the `ios-app-store` workflow (or just
-   push to `main`, since it's configured to trigger on push). It builds the web app,
-   syncs Capacitor, builds and signs the `.ipa`, and uploads it to TestFlight.
-6. **Submit for review** — once the build appears in App Store Connect (under
-   TestFlight first), fill in the remaining store listing fields (screenshots,
-   description, support URL) and submit it for review from the *App Store* tab.
-   Flip `submit_to_app_store: true` in `codemagic.yaml` once you're comfortable
-   having new pushes go straight to review instead of stopping at TestFlight.
+   GitHub repo, then under *Account settings → Integrations → Developer Portal* add
+   the API key from step 3 (name it `codemagic-admin` to match `codemagic.yaml`, or
+   update the file to match whatever name you pick).
+5. **Certificate signing key** — `fetch-signing-files --create` needs a private key
+   to generate the certificate's CSR. Generate one once (`openssl genrsa -out
+   distribution.key 2048`) and add its contents as a **secret** environment variable
+   named `CERTIFICATE_PRIVATE_KEY` under this app's *Environment variables* in
+   Codemagic, in a group named `ios_signing` (matching `codemagic.yaml`). Reusing
+   the same key every build means every build reuses the same certificate instead
+   of minting a new one and running into Apple's 3-certificate limit.
+6. **Run the workflow** — in Codemagic, start the `ios-app-store` workflow (or just
+   push to `master`, since it's configured to trigger on push). It builds the web
+   app, syncs Capacitor, creates/reuses the signing certificate and provisioning
+   profile, builds and signs the `.ipa`, and uploads it to TestFlight.
+7. **Submit for review** — once the build appears in App Store Connect (under
+   TestFlight first, status starts as "Processing" for 10–30 minutes), fill in the
+   remaining store listing fields (screenshots, description, support URL) and submit
+   it for review from the *App Store* tab. Flip `submit_to_app_store: true` in
+   `codemagic.yaml` once you're comfortable having new pushes go straight to review
+   instead of stopping at TestFlight.
 
 Apple's review is usually 24–48 hours. The most common rejection reason for a
 Capacitor/webview app is Guideline 4.2 (Minimum Functionality) — reviewers want to
