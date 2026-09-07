@@ -211,6 +211,7 @@ function App() {
           onSelectLanguage={setLanguage}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenFinder={() => setFinderOpen(true)}
           onStartTrainer={() => setView("trainer")}
           onBrowseOpenings={() => setView("openings")}
           onOpenSkillMap={() => setView("map")}
@@ -284,22 +285,24 @@ function App() {
             onNextLine={handleNextLine}
             onExtend={handleExtend}
           />
-
-          {finderOpen && (
-            <OpeningFinder
-              openings={openings}
-              canonicalOpenings={openingsEn}
-              t={t}
-              onSelect={handleFinderSelect}
-              onClose={() => setFinderOpen(false)}
-            />
-          )}
         </div>
       )}
 
       {/* Not on Home: its own cards already are the navigation, so a tab
           bar underneath them just says the same thing twice. */}
       {view !== "home" && <TabBar view={view} t={t} onChange={setView} />}
+
+      {/* Outside the view branches: the finder is reachable from Home and
+          from the openings list alike. */}
+      {finderOpen && (
+        <OpeningFinder
+          openings={openings}
+          canonicalOpenings={openingsEn}
+          t={t}
+          onSelect={handleFinderSelect}
+          onClose={() => setFinderOpen(false)}
+        />
+      )}
     </>
   );
 }

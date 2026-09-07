@@ -958,6 +958,17 @@ button + .segmented-active {
   color: var(--text-muted);
 }
 
+.home-finder-trigger {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .home-language-card {
   width: 100%;
 }
@@ -1170,6 +1181,11 @@ button + .segmented-active {
     padding-bottom: calc(68px + env(safe-area-inset-bottom));
   }
 
+  /* Skill Map sets its own top padding in SkillMap.css. */
+  .app-shell {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -1215,7 +1231,7 @@ button + .segmented-active {
     align-items: stretch;
     gap: 10px;
     overflow: hidden;
-    padding-top: max(10px, env(safe-area-inset-top));
+    padding-top: max(12px, env(safe-area-inset-top));
   }
 
   .app-shell[data-mobile-view="trainer"] .board-column {
@@ -1239,8 +1255,7 @@ button + .segmented-active {
      natural height so its buttons stay reachable by scrolling. */
   .app-shell[data-mobile-view="trainer"] .info-panel .strategy-card-white,
   .app-shell[data-mobile-view="trainer"] .info-panel .strategy-card-black {
-    flex: 0 1 auto;
-    min-height: 0;
+    flex: 0 0 auto;
     overflow: hidden;
     padding: 12px 14px;
   }

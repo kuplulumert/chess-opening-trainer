@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { MovePurpose } from "./MovePurpose";
@@ -40,8 +41,18 @@ export function InfoPanel({
   onNextLine,
   onExtend,
 }: InfoPanelProps) {
+  // Finishing a line adds a third card to a panel sized for two, so the
+  // "what next" buttons start out below the fold. Bring them into view
+  // rather than making the trainee find them.
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!isDone) return;
+    const panel = panelRef.current;
+    if (panel) panel.scrollTo({ top: panel.scrollHeight, behavior: "smooth" });
+  }, [isDone]);
+
   return (
-    <aside className="info-panel">
+    <aside className="info-panel" ref={panelRef}>
       {SHOW_MOVE_HINT && (
         <MovePurpose
           comment={currentComment}

@@ -17,6 +17,7 @@ interface HomeScreenProps {
   onSelectLanguage: (language: Language) => void;
   theme: Theme;
   onToggleTheme: () => void;
+  onOpenFinder: () => void;
   onStartTrainer: () => void;
   onBrowseOpenings: () => void;
   onOpenSkillMap: () => void;
@@ -28,6 +29,7 @@ export function HomeScreen({
   onSelectLanguage,
   theme,
   onToggleTheme,
+  onOpenFinder,
   onStartTrainer,
   onBrowseOpenings,
   onOpenSkillMap,
@@ -92,6 +94,9 @@ export function HomeScreen({
             <span className="home-action-label">{t.home.browseOpenings}</span>
           </span>
           <span className="home-action-hint">{t.home.browseOpeningsHint}</span>
+        </button>
+        <button type="button" className="home-finder-trigger" onClick={onOpenFinder}>
+          {t.finder.trigger}
         </button>
         <button type="button" className="home-action-card" onClick={onOpenSkillMap}>
           <span className="home-action-title-row">
