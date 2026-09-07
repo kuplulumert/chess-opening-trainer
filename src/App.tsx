@@ -12,6 +12,7 @@ import { HomeScreen } from "./components/HomeScreen";
 import { TabBar } from "./components/TabBar";
 import { getAllProgress, recordCompletion } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
+import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
 import { useLanguage } from "./hooks/useLanguage";
 import "./App.css";
@@ -83,6 +84,12 @@ function App() {
   useEffect(() => {
     if (view === "trainer") window.scrollTo(0, 0);
   }, [view, runKey]);
+
+  // Native only: the launch screen is held until this first commit has
+  // put the home screen on screen, then cross-faded away (no-op on web).
+  useEffect(() => {
+    hideSplash();
+  }, []);
 
   // Defences (Sicilian, French, Caro-Kann, ... and individual defensive
   // lines like the Berlin Defence within Ruy Lopez) are trained as Black

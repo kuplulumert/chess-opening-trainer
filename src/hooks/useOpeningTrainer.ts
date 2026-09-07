@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import type { OpeningLine } from "../data/openings";
+import { hapticError, hapticMove, hapticSuccess } from "../utils/native";
 import { playMoveSound } from "../utils/sound";
 
 export type PlayerColor = "w" | "b";
@@ -71,6 +72,10 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
       return next;
     });
     playMoveSound();
+    // The move that finishes the line gets the "success" pattern instead
+    // of the ordinary tick.
+    if (index + 1 === line.moves.length) hapticSuccess();
+    else hapticMove();
     setMoveIndex(index + 1);
     setFeedback("idle");
     setWrongAttempts(0);
@@ -123,6 +128,7 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
         window.setTimeout(() => setFeedback("idle"), 500);
       } else {
         setFeedback("wrong");
+        hapticError();
         setLastWrongSquares({ from, to });
         setWrongAttempts((n) => n + 1);
         window.setTimeout(() => setFeedback("idle"), 500);

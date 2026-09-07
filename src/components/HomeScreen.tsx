@@ -3,6 +3,7 @@ import type { Theme } from "../hooks/useTheme";
 import type { Dictionary, Language } from "../i18n/translations";
 import { LanguagePicker } from "./LanguagePicker";
 import { ThemeToggle } from "./ThemeToggle";
+import { isNative } from "../utils/native";
 
 // The full launch sequence (logo blooms in, then title, tagline and cards
 // stagger in) plays once per app session — the first time Home mounts.
@@ -37,7 +38,16 @@ export function HomeScreen({
   }, []);
 
   return (
-    <div className={"home-screen" + (intro ? " home-screen-intro" : "")}>
+    <div
+      className={
+        "home-screen" +
+        (intro ? " home-screen-intro" : "") +
+        // On native the launch screen already shows the rook in exactly
+        // this spot, so the logo doesn't re-animate — it just stays put
+        // while the launch screen fades and the rest blooms in around it.
+        (intro && isNative ? " home-screen-intro-native" : "")
+      }
+    >
       <div className="home-theme-toggle">
         <ThemeToggle
           theme={theme}

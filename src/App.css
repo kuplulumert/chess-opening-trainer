@@ -1071,6 +1071,12 @@ button + .segmented-active {
   animation: intro-logo 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* In the native app the launch screen has already been showing this exact
+   rook in this exact spot; re-animating it would make it flicker. */
+.home-screen-intro-native .home-logo {
+  animation: none;
+}
+
 .home-screen-intro .home-hero::before {
   animation: intro-glow 1100ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
 }

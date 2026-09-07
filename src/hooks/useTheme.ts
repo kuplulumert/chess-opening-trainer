@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useState } from "react";
+import { applyStatusBar } from "../utils/native";
 
 export type Theme = "light" | "dark";
 
@@ -22,6 +23,7 @@ export function useTheme() {
   // flash; this keeps it in sync whenever the user toggles.
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
+    applyStatusBar(theme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {

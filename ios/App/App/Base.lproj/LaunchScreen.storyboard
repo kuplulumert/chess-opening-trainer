@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Launch screen matched to the web home screen: the same dark #14151a
+  background and the same rook, at the same size (132pt) and the same
+  spot (max(48pt, safe-area top) from the top edge, centred). The web
+  side skips its own logo animation on native for that reason — when the
+  SplashScreen plugin fades this out, the rook simply stays put while the
+  rest of the home screen blooms in around it.
+-->
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <device id="retina6_1" orientation="portrait" appearance="dark"/>
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -12,11 +20,29 @@
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                    </imageView>
+                    <view key="view" contentMode="scaleToFill" id="snD-IY-ifK">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="rk1-Lg-o01">
+                                <rect key="frame" x="141" y="48" width="132" height="132"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="132" id="rkW-aa-001"/>
+                                    <constraint firstAttribute="height" constant="132" id="rkH-aa-002"/>
+                                </constraints>
+                            </imageView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Q5m-sz-Lgt"/>
+                        <color key="backgroundColor" red="0.078431372549019607" green="0.082352941176470587" blue="0.10196078431372549" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="rk1-Lg-o01" firstAttribute="centerX" secondItem="snD-IY-ifK" secondAttribute="centerX" id="rkX-aa-003"/>
+                            <!-- top = max(48, safe-area top): two required lower bounds plus a
+                                 low-priority pull upward, which is how Auto Layout spells max(). -->
+                            <constraint firstItem="rk1-Lg-o01" firstAttribute="top" relation="greaterThanOrEqual" secondItem="snD-IY-ifK" secondAttribute="top" constant="48" id="rkT-aa-004"/>
+                            <constraint firstItem="rk1-Lg-o01" firstAttribute="top" relation="greaterThanOrEqual" secondItem="Q5m-sz-Lgt" secondAttribute="top" id="rkT-aa-005"/>
+                            <constraint firstItem="rk1-Lg-o01" firstAttribute="top" secondItem="snD-IY-ifK" secondAttribute="top" priority="250" id="rkT-aa-006"/>
+                        </constraints>
+                    </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -24,9 +50,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Splash" width="1366" height="1366"/>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
+        <image name="LaunchLogo" width="418" height="418"/>
     </resources>
 </document>
