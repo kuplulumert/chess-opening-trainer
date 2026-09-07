@@ -56,8 +56,11 @@
   grid-template-columns: 300px minmax(0, 1fr) 320px;
   gap: 20px;
   min-height: 100svh;
-  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
-    max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  /* Top is plain 20px, not safe-area-aware — the sticky view-switcher above
+     this already reserves the safe-area-inset-top space, so adding it here
+     too just doubles up into a large empty gap under the tabs. */
+  padding: 20px max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
   align-items: start;
 }
 
