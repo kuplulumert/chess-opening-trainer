@@ -1105,13 +1105,18 @@ button + .segmented-active {
 /* ---------- Bottom tab bar (phones) ---------- */
 
 .tab-bar {
+  /* 4px above the items, 46px of item, and a bottom inset that still
+     clears the home indicator but hugs it more closely than a full
+     safe-area inset does — that full inset made the bar ~15px taller
+     than it needed to be, which is what was crowding the Black card. */
+  --tab-bar-pad-bottom: max(4px, calc(env(safe-area-inset-bottom) - 10px));
   display: none;
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 20;
-  padding: 6px max(8px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom))
+  padding: 4px max(8px, env(safe-area-inset-right)) var(--tab-bar-pad-bottom)
     max(8px, env(safe-area-inset-left));
   background: color-mix(in srgb, var(--panel-bg) 86%, transparent);
   -webkit-backdrop-filter: blur(16px);
@@ -1125,8 +1130,8 @@ button + .segmented-active {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  min-height: 49px;
-  padding: 5px 4px;
+  min-height: 46px;
+  padding: 4px;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -1176,9 +1181,14 @@ button + .segmented-active {
 
   /* Room for the fixed tab bar under the last content. Not on body —
      Home has no tab bar and is sized to the viewport exactly. */
+  :root {
+    /* 4px + 46px + the bar's own bottom inset — see .tab-bar. */
+    --tab-bar-h: calc(50px + max(4px, calc(env(safe-area-inset-bottom) - 10px)));
+  }
+
   .app-shell,
   .skill-map {
-    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--tab-bar-h) + 8px);
   }
 
   /* Skill Map sets its own top padding in SkillMap.css. */
@@ -1275,8 +1285,8 @@ button + .segmented-active {
      can take exactly the space that's left over. */
   .app-shell[data-mobile-view="trainer"] .board-wrap {
     --board-chrome: calc(
-      34px /* header */ + 44px /* toolbar */ + 40px /* gaps */ + 62px /* tab bar */ +
-        216px /* the two side explanations */
+      34px /* header */ + 44px /* toolbar */ + 40px /* gaps */ + var(--tab-bar-h) +
+        236px /* the two side explanations, at three clamped lines each */
     );
     width: min(100%, calc(100dvh - var(--board-chrome) - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     margin-inline: auto;
