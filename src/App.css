@@ -604,27 +604,37 @@ button + .segmented-active {
   line-height: 1.6;
 }
 
+/* Literally white/black backgrounds — regardless of the app's own
+   light/dark theme — so which card belongs to which side reads at a
+   glance. Text colors are fixed to match rather than the theme's own
+   (theme-dependent) text variables, since those aren't guaranteed to
+   contrast against a background that's deliberately not theme-aware. */
 .strategy-card-white {
-  background: var(--white-side-bg);
+  background: #ffffff;
   border-left: 4px solid var(--white-side);
+  color: #14161c;
 }
 
 .strategy-card-white .moves-title {
-  color: var(--white-side);
+  color: #2657a3;
 }
 
 .strategy-card-black {
-  background: var(--black-side-bg);
+  background: #14151a;
   border-left: 4px solid var(--black-side);
+  color: #f0f1f4;
 }
 
 .strategy-card-black .moves-title {
-  color: var(--black-side);
+  color: #8fb8f4;
 }
 
 .strategy-card-white .strategy-text,
 .strategy-card-black .strategy-text {
   margin-top: 8px;
+  /* Overrides .strategy-text's theme-based color — see the fixed
+     white/black card backgrounds above. */
+  color: inherit;
 }
 
 /* ---------- Opening Finder ---------- */

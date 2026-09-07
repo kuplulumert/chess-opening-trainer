@@ -39,15 +39,18 @@ export function BoardPanel({
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
 
-  // A layout shift after mount (e.g. safe-area padding resolving, or any
-  // reflow of the elements around the board) can leave the board's touch
-  // hit-testing keyed to stale square positions, so taps land on the wrong
-  // square. Nudging a resize event once things have settled forces a
-  // re-measure against the final layout.
+  // A layout shift (safe-area padding resolving, switching to a line with a
+  // longer/shorter name, White/Black cards appearing or disappearing as
+  // moves are played, ...) can leave the board's touch hit-testing keyed to
+  // stale square positions, so taps land on the wrong square — confirmed to
+  // happen specifically when switching lines, not just on first load, so
+  // this needs to re-run on every content change that can resize
+  // board-stage, not just once on mount. Nudging a resize event once things
+  // have settled forces a re-measure against the final layout.
   useEffect(() => {
     const id = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 350);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [fen, openingName, whiteStrategy, blackStrategy]);
 
   // Tap-to-move selection: touching a piece picks it up, touching a second
   // square plays it there. Cleared on every new position (a fresh move, a

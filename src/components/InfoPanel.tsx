@@ -24,6 +24,10 @@ interface InfoPanelProps {
   onExtend: () => void;
 }
 
+// Hidden per request — kept in place (component and props untouched) in
+// case it comes back later, just not rendered for now.
+const SHOW_MOVE_HINT = false;
+
 function formatHistory(history: string[]): string {
   const parts: string[] = [];
   for (let i = 0; i < history.length; i += 2) {
@@ -61,12 +65,14 @@ export function InfoPanel({
 
   return (
     <aside className="info-panel">
-      <MovePurpose
-        comment={currentComment}
-        moveIndex={moveIndex}
-        awaitingMove={isPlayerTurn}
-        title={t.moveHintTitle}
-      />
+      {SHOW_MOVE_HINT && (
+        <MovePurpose
+          comment={currentComment}
+          moveIndex={moveIndex}
+          awaitingMove={isPlayerTurn}
+          title={t.moveHintTitle}
+        />
+      )}
 
       <div className="info-card">
         <div className="control-row">
