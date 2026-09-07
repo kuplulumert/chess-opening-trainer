@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
-import { Chessboard, type PieceDropHandlerArgs } from "react-chessboard";
+import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
 
 interface BoardPanelProps {
@@ -95,12 +95,15 @@ export function BoardPanel({
   // as the trainee touches a piece to make their own next move — they're a
   // glance-and-go explanation, not something to fight with while dragging.
   // Reset synchronously during render (rather than in an effect) so the
-  // reveal isn't delayed by an extra render once a move lands.
+  // reveal isn't delayed by an extra render once a move lands. A pending
+  // tap-to-move selection is cleared the same way, on the same trigger.
   const [dismissed, setDismissed] = useState(false);
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [prevFen, setPrevFen] = useState(fen);
   if (prevFen !== fen) {
     setPrevFen(fen);
     setDismissed(false);
+    setSelectedSquare(null);
   }
 
   const whiteSquare = useMemo(
@@ -148,16 +151,49 @@ export function BoardPanel({
       styles[hintSquares.from] = { ...styles[hintSquares.from], backgroundColor: "rgba(70, 170, 90, 0.45)" };
       styles[hintSquares.to] = { ...styles[hintSquares.to], backgroundColor: "rgba(70, 170, 90, 0.45)" };
     }
+    if (selectedSquare) {
+      styles[selectedSquare] = {
+        ...styles[selectedSquare],
+        backgroundColor: "rgba(255, 210, 90, 0.55)",
+      };
+    }
     return styles;
-  }, [feedback, lastWrongSquares, hintSquares]);
+  }, [feedback, lastWrongSquares, hintSquares, selectedSquare]);
 
   function handlePieceDrop({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean {
+    setSelectedSquare(null);
     if (!targetSquare || !isPlayerTurn) return false;
     return onDrop(sourceSquare as Square, targetSquare as Square);
   }
 
   function canDragPiece(): boolean {
     return isPlayerTurn;
+  }
+
+  // Tap-to-move: touch a piece to pick it up, touch a destination square to
+  // play it there — an alternative to dragging that's far more reliable on
+  // touch devices, where a drag can be swallowed by the OS/webview before
+  // it ever reaches the board.
+  function handleSquareClick({ piece, square }: SquareHandlerArgs): void {
+    if (!isPlayerTurn) return;
+    const targetSquare = square as Square;
+
+    if (!selectedSquare) {
+      if (piece) setSelectedSquare(targetSquare);
+      return;
+    }
+    if (targetSquare === selectedSquare) {
+      setSelectedSquare(null);
+      return;
+    }
+    if (piece && piece.pieceType[0] === playerColor) {
+      setSelectedSquare(targetSquare);
+      return;
+    }
+
+    const from = selectedSquare;
+    setSelectedSquare(null);
+    onDrop(from, targetSquare);
   }
 
   return (
@@ -176,6 +212,7 @@ export function BoardPanel({
             position: fen,
             boardOrientation: orientation,
             onPieceDrop: handlePieceDrop,
+            onSquareClick: handleSquareClick,
             canDragPiece,
             squareStyles,
             animationDurationInMs: 200,
