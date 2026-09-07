@@ -268,7 +268,12 @@
    Play as/Mode segmented control) can't be overridden by the plain
    :hover rule above, which otherwise wins on specificity when the
    selected item itself is hovered. */
-.opening-item-active,
+.opening-item-active {
+  background: var(--accent);
+  color: var(--panel-bg);
+  font-weight: 700;
+}
+
 @media (hover: hover) {
   .opening-item-active:hover {
     background: var(--accent);
