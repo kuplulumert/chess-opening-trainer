@@ -80,7 +80,6 @@ export interface Dictionary {
   hintLabel: string;
   wrongAttempts: (n: number) => string;
   movesHeading: string;
-  emptyMoves: string;
 
   switchToLight: string;
   switchToDark: string;
@@ -113,7 +112,7 @@ const en: Dictionary = {
   restart: "Restart",
   stepBack: "Previous move",
   stepForward: "Next move",
-  hintButton: "? Hint",
+  hintButton: "Hint",
 
   moveHintTitle: "Move Hint",
 
@@ -127,7 +126,6 @@ const en: Dictionary = {
   hintLabel: "Hint:",
   wrongAttempts: (n) => `${n} wrong attempt${n > 1 ? "s" : ""} — keep trying.`,
   movesHeading: "Moves",
-  emptyMoves: "—",
 
   switchToLight: "Switch to light mode",
   switchToDark: "Switch to dark mode",
@@ -236,7 +234,7 @@ const tr: Dictionary = {
   restart: "Baştan başla",
   stepBack: "Önceki hamle",
   stepForward: "Sonraki hamle",
-  hintButton: "? İpucu",
+  hintButton: "İpucu",
 
   moveHintTitle: "Hamle İpucu",
 
@@ -250,7 +248,6 @@ const tr: Dictionary = {
   hintLabel: "İpucu:",
   wrongAttempts: (n) => `${n} yanlış deneme — denemeye devam et.`,
   movesHeading: "Hamleler",
-  emptyMoves: "—",
 
   switchToLight: "Açık temaya geç",
   switchToDark: "Koyu temaya geç",

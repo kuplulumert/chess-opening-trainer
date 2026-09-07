@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { MoveFeedback, PlayerColor, TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { MovePurpose } from "./MovePurpose";
@@ -19,25 +20,15 @@ interface InfoPanelProps {
   onColorChange: (color: PlayerColor) => void;
   onModeChange: (mode: TrainerMode) => void;
   onRestart: () => void;
-  onHint: () => void;
   onNextLine: () => void;
   onExtend: () => void;
+  /** Jump to the position after the first `plies` moves of the line. */
+  onGoTo: (plies: number) => void;
 }
 
 // Hidden per request — kept in place (component and props untouched) in
 // case it comes back later, just not rendered for now.
 const SHOW_MOVE_HINT = false;
-
-function formatHistory(history: string[]): string {
-  const parts: string[] = [];
-  for (let i = 0; i < history.length; i += 2) {
-    const moveNo = i / 2 + 1;
-    const white = history[i];
-    const black = history[i + 1];
-    parts.push(black ? `${moveNo}. ${white} ${black}` : `${moveNo}. ${white}`);
-  }
-  return parts.join("  ");
-}
 
 export function InfoPanel({
   playerColor,
@@ -56,12 +47,28 @@ export function InfoPanel({
   onColorChange,
   onModeChange,
   onRestart,
-  onHint,
   onNextLine,
   onExtend,
+  onGoTo,
 }: InfoPanelProps) {
   const progressPercent = totalMoves === 0 ? 0 : Math.round((moveIndex / totalMoves) * 100);
   const colorLabel = playerColor === "w" ? t.white : t.black;
+
+  // Study mode already highlights the move on the board — spelling it out
+  // here as well was just the same information twice.
+  const hintText = mode === "quiz" ? revealedHint : null;
+
+  let statusText: string;
+  if (isDone) statusText = t.lineComplete(mode);
+  else if (!isPlayerTurn) statusText = t.replayingLine;
+  else statusText = feedback === "wrong" ? t.notQuite : t.yourMove(colorLabel);
+
+  // Keep the newest move in view as the strip grows.
+  const stripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (strip) strip.scrollLeft = strip.scrollWidth;
+  }, [history.length]);
 
   return (
     <aside className="info-panel">
@@ -74,10 +81,11 @@ export function InfoPanel({
         />
       )}
 
-      <div className="info-card">
-        <div className="control-row">
-          <span className="control-label">{t.playAs}</span>
-          <div className="segmented">
+      <div className="info-card session-card">
+        {/* Session settings, changed once and then left alone — two
+            self-explanatory segments on one line, no labels. */}
+        <div className="settings-row">
+          <div className="segmented" role="group" aria-label={t.playAs}>
             <button
               type="button"
               className={playerColor === "w" ? "segmented-active" : ""}
@@ -93,10 +101,7 @@ export function InfoPanel({
               {t.black}
             </button>
           </div>
-        </div>
-        <div className="control-row">
-          <span className="control-label">{t.mode}</span>
-          <div className="segmented">
+          <div className="segmented" role="group" aria-label={t.mode}>
             <button
               type="button"
               className={mode === "quiz" ? "segmented-active" : ""}
@@ -113,64 +118,68 @@ export function InfoPanel({
             </button>
           </div>
         </div>
-        <div className="button-row">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={onHint}
-            disabled={mode !== "quiz" || isDone}
-          >
-            {t.hintButton}
-          </button>
-        </div>
-      </div>
 
-      <div className="info-card status-card">
+        <div className="session-divider" />
+
         <div className="progress-track" aria-hidden="true">
           <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
         </div>
-        <p className="progress-label">{t.progressLabel(Math.min(moveIndex, totalMoves), totalMoves)}</p>
+        <div className="status-row">
+          <span className="progress-label">
+            {t.progressLabel(Math.min(moveIndex, totalMoves), totalMoves)}
+          </span>
+          <span className={"status-line" + (isDone ? " status-done" : "")}>{statusText}</span>
+        </div>
+        {hintText && (
+          <p className="hint-line">
+            {t.hintLabel} <strong>{hintText}</strong>
+          </p>
+        )}
+        {!isDone && isPlayerTurn && wrongAttempts > 0 && !hintText && (
+          <p className="hint-line hint-line-muted">{t.wrongAttempts(wrongAttempts)}</p>
+        )}
 
-        {isDone ? (
+        {isDone && (
+          <div className="button-row">
+            <button type="button" className="secondary-button" onClick={onRestart}>
+              {t.playAgain}
+            </button>
+            <button type="button" className="secondary-button" onClick={onNextLine}>
+              {t.nextOpening}
+            </button>
+          </div>
+        )}
+        {isDone && canExtend && (
+          <div className="extend-offer">
+            <p className="extend-offer-text">{t.extendPrompt}</p>
+            <button type="button" className="secondary-button" onClick={onExtend}>
+              {t.extendButton}
+            </button>
+          </div>
+        )}
+
+        {history.length > 0 && (
           <>
-            <p className="status-line status-done">{t.lineComplete(mode)}</p>
-            <div className="button-row">
-              <button type="button" className="secondary-button" onClick={onRestart}>
-                {t.playAgain}
-              </button>
-              <button type="button" className="secondary-button" onClick={onNextLine}>
-                {t.nextOpening}
-              </button>
+            <div className="session-divider" />
+            {/* Played moves as tappable pills; the last one is the current
+                position. Only what's been played — the rest of the line
+                stays hidden so Practice mode stays a test. */}
+            <div className="moves-strip" ref={stripRef} aria-label={t.movesHeading}>
+              {history.map((san, i) => (
+                <span key={i} className="move-item">
+                  {i % 2 === 0 && <span className="move-number">{i / 2 + 1}.</span>}
+                  <button
+                    type="button"
+                    className={"move-pill" + (i === history.length - 1 ? " move-pill-active" : "")}
+                    onClick={() => onGoTo(i + 1)}
+                  >
+                    {san}
+                  </button>
+                </span>
+              ))}
             </div>
-            {canExtend && (
-              <div className="extend-offer">
-                <p className="extend-offer-text">{t.extendPrompt}</p>
-                <button type="button" className="secondary-button" onClick={onExtend}>
-                  {t.extendButton}
-                </button>
-              </div>
-            )}
-          </>
-        ) : !isPlayerTurn ? (
-          <p className="status-line">{t.replayingLine}</p>
-        ) : (
-          <>
-            <p className="status-line">{feedback === "wrong" ? t.notQuite : t.yourMove(colorLabel)}</p>
-            {revealedHint && (
-              <p className="hint-line">
-                {t.hintLabel} <strong>{revealedHint}</strong>
-              </p>
-            )}
-            {wrongAttempts > 0 && !revealedHint && (
-              <p className="hint-line hint-line-muted">{t.wrongAttempts(wrongAttempts)}</p>
-            )}
           </>
         )}
-      </div>
-
-      <div className="info-card">
-        <h3 className="moves-title">{t.movesHeading}</h3>
-        <p className="moves-list">{history.length ? formatHistory(history) : t.emptyMoves}</p>
       </div>
     </aside>
   );

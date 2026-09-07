@@ -1,7 +1,14 @@
+import { useEffect, useState } from "react";
 import type { Theme } from "../hooks/useTheme";
 import type { Dictionary, Language } from "../i18n/translations";
 import { LanguagePicker } from "./LanguagePicker";
 import { ThemeToggle } from "./ThemeToggle";
+
+// The full launch sequence (logo blooms in, then title, tagline and cards
+// stagger in) plays once per app session — the first time Home mounts.
+// Coming back to Home later gets the regular quick screen fade instead;
+// replaying the whole intro on every tab switch would wear thin fast.
+let introPlayed = false;
 
 interface HomeScreenProps {
   t: Dictionary;
@@ -24,8 +31,13 @@ export function HomeScreen({
   onBrowseOpenings,
   onOpenSkillMap,
 }: HomeScreenProps) {
+  const [intro] = useState(() => !introPlayed);
+  useEffect(() => {
+    introPlayed = true;
+  }, []);
+
   return (
-    <div className="home-screen">
+    <div className={"home-screen" + (intro ? " home-screen-intro" : "")}>
       <div className="home-theme-toggle">
         <ThemeToggle
           theme={theme}

@@ -9,6 +9,7 @@ import { InfoPanel } from "./components/InfoPanel";
 import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
 import { HomeScreen } from "./components/HomeScreen";
+import { TabBar } from "./components/TabBar";
 import { getAllProgress, recordCompletion } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
 import { useTheme } from "./hooks/useTheme";
@@ -193,14 +194,6 @@ function App() {
               {t.map.navLabel}
             </button>
           </div>
-          {view === "trainer" && (
-            <HowToUseBanner
-              text={t.howToUse}
-              dismissLabel={t.dismissGuide}
-              storageKey="chess-opening-trainer-guide-dismissed"
-              variant="inline"
-            />
-          )}
         </div>
       )}
 
@@ -219,6 +212,13 @@ function App() {
         <SkillMap openings={openings} progress={progress} t={t} onTrainLine={handleMapSelect} />
       ) : (
         <div className="app-shell" data-mobile-view={view}>
+          {view === "trainer" && (
+            <HowToUseBanner
+              text={t.howToUse}
+              dismissLabel={t.dismissGuide}
+              storageKey="chess-opening-trainer-guide-dismissed"
+            />
+          )}
           <Sidebar
             lines={openings}
             selectedId={selectedId}
@@ -257,6 +257,9 @@ function App() {
               onStepBack={trainer.stepBack}
               onStepForward={trainer.stepForward}
               onRestart={handleRestart}
+              hintVisible={mode === "quiz"}
+              canHint={!trainer.isDone}
+              onHint={trainer.requestHint}
             />
           </main>
           <InfoPanel
@@ -276,9 +279,9 @@ function App() {
             onColorChange={setPlayerColor}
             onModeChange={setMode}
             onRestart={handleRestart}
-            onHint={trainer.requestHint}
             onNextLine={handleNextLine}
             onExtend={handleExtend}
+            onGoTo={trainer.goTo}
           />
 
           {finderOpen && (
@@ -292,6 +295,8 @@ function App() {
           )}
         </div>
       )}
+
+      <TabBar view={view} t={t} onChange={setView} />
     </>
   );
 }

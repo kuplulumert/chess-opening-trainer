@@ -161,6 +161,24 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     applyBookMove(moveIndex);
   }, [isDone, moveIndex, applyBookMove]);
 
+  // Jump to the position after the first `plies` moves — the move strip in
+  // the info panel uses this. Landing on the opponent's turn is fine: the
+  // auto-reply effect just continues the line from there.
+  const goTo = useCallback(
+    (plies: number) => {
+      if (plies < 0 || plies > line.moves.length) return;
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      setGame(positionAfter(line.moves, plies));
+      setMoveIndex(plies);
+      setFeedback("idle");
+      setWrongAttempts(0);
+      setLastWrongSquares(null);
+      setHintRequested(false);
+      playMoveSound();
+    },
+    [line.moves],
+  );
+
   const showHint = mode === "study" || hintRequested || wrongAttempts >= WRONG_ATTEMPTS_BEFORE_HINT;
   const revealedHint = showHint && !isDone ? line.moves[moveIndex] : null;
 
@@ -191,5 +209,6 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     canStepForward,
     stepBack,
     stepForward,
+    goTo,
   };
 }

@@ -103,4 +103,37 @@ p {
 button {
   font-family: inherit;
   cursor: pointer;
+  /* App-like touch feel: no grey tap flash, no text selection on
+     controls, and a quick press-down so every tap visibly reacts. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+h1,
+h2,
+h3 {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Decorative images shouldn't offer "Save Image" on long-press or start a
+   native drag — both are instant tells that this is a web page. */
+img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
 }

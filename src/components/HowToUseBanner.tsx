@@ -12,13 +12,9 @@ interface HowToUseBannerProps {
   text: string;
   dismissLabel: string;
   storageKey: string;
-  /** "boxed" (default) is a standalone bordered banner; "inline" drops the
-   * box styling so it can sit inside an existing bar (e.g. the view switcher)
-   * instead of opening its own area. */
-  variant?: "boxed" | "inline";
 }
 
-export function HowToUseBanner({ text, dismissLabel, storageKey, variant = "boxed" }: HowToUseBannerProps) {
+export function HowToUseBanner({ text, dismissLabel, storageKey }: HowToUseBannerProps) {
   const [dismissed, setDismissed] = useState(() => readDismissed(storageKey));
 
   if (dismissed) return null;
@@ -33,7 +29,7 @@ export function HowToUseBanner({ text, dismissLabel, storageKey, variant = "boxe
   };
 
   return (
-    <div className={variant === "inline" ? "how-to-use how-to-use-inline" : "how-to-use"}>
+    <div className="how-to-use">
       <p className="how-to-use-text">{text}</p>
       <button
         type="button"

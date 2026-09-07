@@ -19,11 +19,15 @@ interface BoardPanelProps {
   blackStrategy: string | null;
   canStepBack: boolean;
   canStepForward: boolean;
+  /** Practice mode only — Study mode already shows the move on the board. */
+  hintVisible: boolean;
+  canHint: boolean;
   t: Dictionary;
   onDrop: (from: Square, to: Square) => boolean;
   onStepBack: () => void;
   onStepForward: () => void;
   onRestart: () => void;
+  onHint: () => void;
 }
 
 function findMoveSquares(fen: string, san: string): { from: Square; to: Square } | null {
@@ -44,11 +48,14 @@ export function BoardPanel({
   blackStrategy,
   canStepBack,
   canStepForward,
+  hintVisible,
+  canHint,
   t,
   onDrop,
   onStepBack,
   onStepForward,
   onRestart,
+  onHint,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
 
@@ -147,51 +154,9 @@ export function BoardPanel({
   return (
     <div className="board-stage">
       {touchDebug && <TouchDebug />}
-      <div className="board-header">
-        <h2 className="board-opening-name" onClick={handleNameTap}>
-          {openingName}
-        </h2>
-        <div className="board-header-actions">
-          <button
-            type="button"
-            className="board-action"
-            onClick={onRestart}
-            aria-label={t.restart}
-            title={t.restart}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </g>
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="board-action"
-            onClick={onStepBack}
-            disabled={!canStepBack}
-            aria-label={t.stepBack}
-            title={t.stepBack}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="board-action"
-            onClick={onStepForward}
-            disabled={!canStepForward}
-            aria-label={t.stepForward}
-            title={t.stepForward}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <h2 className="board-opening-name" onClick={handleNameTap}>
+        {openingName}
+      </h2>
       <div className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}>
         <Chessboard
           options={{
@@ -208,6 +173,69 @@ export function BoardPanel({
             lightSquareStyle: { backgroundColor: "#eef1f5" },
           }}
         />
+      </div>
+      {/* Directly under the board, where a thumb naturally rests on a
+          phone — the top-right corner above the board was the furthest
+          reach on the whole screen. Back/forward are the frequent ones
+          and get the wide targets on the right; restart stays small on
+          the left so it isn't hit by accident between them. */}
+      <div className="board-toolbar">
+        <button
+          type="button"
+          className="board-action board-action-compact"
+          onClick={onRestart}
+          aria-label={t.restart}
+          title={t.restart}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </g>
+          </svg>
+        </button>
+        {hintVisible && (
+          <button
+            type="button"
+            className="board-action board-action-compact"
+            onClick={onHint}
+            disabled={!canHint}
+            aria-label={t.hintButton}
+            title={t.hintButton}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+                <path d="M9 18h6" />
+                <path d="M10 22h4" />
+              </g>
+            </svg>
+          </button>
+        )}
+        <button
+          type="button"
+          className="board-action"
+          onClick={onStepBack}
+          disabled={!canStepBack}
+          aria-label={t.stepBack}
+          title={t.stepBack}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="board-action"
+          onClick={onStepForward}
+          disabled={!canStepForward}
+          aria-label={t.stepForward}
+          title={t.stepForward}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
       {whiteStrategy && (
         <div className="info-card strategy-card-white">
