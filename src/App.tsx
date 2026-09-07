@@ -271,15 +271,9 @@ function App() {
             />
           </main>
           <InfoPanel
-            playerColor={playerColor}
             mode={mode}
-            history={trainer.history}
             moveIndex={trainer.moveIndex}
-            totalMoves={trainer.totalMoves}
             isDone={trainer.isDone}
-            feedback={trainer.feedback}
-            wrongAttempts={trainer.wrongAttempts}
-            revealedHint={trainer.revealedHint}
             currentComment={trainer.currentComment}
             isPlayerTurn={trainer.isPlayerTurn}
             canExtend={Boolean(line.extension) && !extended}
@@ -289,7 +283,6 @@ function App() {
             onRestart={handleRestart}
             onNextLine={handleNextLine}
             onExtend={handleExtend}
-            onGoTo={trainer.goTo}
           />
 
           {finderOpen && (

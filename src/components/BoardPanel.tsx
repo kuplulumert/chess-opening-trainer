@@ -163,34 +163,39 @@ export function BoardPanel({
         <h2 className="board-opening-name" onClick={handleNameTap}>
           {openingName}
         </h2>
+        {/* Plain text toggles rather than boxed segmented controls: the
+            boxes' borders and padding cost ~90px, which is the difference
+            between these two fitting beside the name and not. */}
         <div className="board-header-settings">
-          <div className="segmented segmented-compact" role="group" aria-label={t.playAs}>
+          <div className="mini-toggle" role="group" aria-label={t.playAs}>
             <button
               type="button"
-              className={playerColor === "w" ? "segmented-active" : ""}
+              className={playerColor === "w" ? "mini-toggle-active" : ""}
               onClick={() => onColorChange("w")}
             >
               {t.white}
             </button>
+            <span aria-hidden="true">·</span>
             <button
               type="button"
-              className={playerColor === "b" ? "segmented-active" : ""}
+              className={playerColor === "b" ? "mini-toggle-active" : ""}
               onClick={() => onColorChange("b")}
             >
               {t.black}
             </button>
           </div>
-          <div className="segmented segmented-compact" role="group" aria-label={t.mode}>
+          <div className="mini-toggle" role="group" aria-label={t.mode}>
             <button
               type="button"
-              className={mode === "quiz" ? "segmented-active" : ""}
+              className={mode === "quiz" ? "mini-toggle-active" : ""}
               onClick={() => onModeChange("quiz")}
             >
               {t.quiz}
             </button>
+            <span aria-hidden="true">·</span>
             <button
               type="button"
-              className={mode === "study" ? "segmented-active" : ""}
+              className={mode === "study" ? "mini-toggle-active" : ""}
               onClick={() => onModeChange("study")}
             >
               {t.study}

@@ -356,11 +356,28 @@
   flex-shrink: 0;
 }
 
-/* Tight on purpose: these two share a row with the opening name, and
-   every pixel they give back is a character of the name that survives. */
-.segmented-compact button {
+/* Text toggles, no box: two bordered segmented controls beside the name
+   don't fit on a phone, and their chrome is what costs the width. */
+.mini-toggle {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
   font-size: 11px;
-  padding: 5px 7px;
+}
+
+.mini-toggle button {
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mini-toggle button.mini-toggle-active {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .board-toolbar {
@@ -589,25 +606,6 @@ button + .segmented-active {
   cursor: not-allowed;
 }
 
-.progress-track {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--border);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.25s ease;
-}
-
-.progress-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
 .status-line {
   font-size: 13px;
   color: var(--text-h);
@@ -616,16 +614,6 @@ button + .segmented-active {
 .status-done {
   color: var(--success);
   font-weight: 600;
-}
-
-.hint-line {
-  font-size: 12px;
-  color: var(--accent);
-  margin-top: 8px;
-}
-
-.hint-line-muted {
-  color: var(--text-muted);
 }
 
 .extend-offer {
@@ -652,81 +640,6 @@ button + .segmented-active {
 
 /* One card instead of three: settings on top, then progress/status, then
    the played moves as a scrolling strip — all separated by hairlines. */
-.settings-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.session-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 12px 0;
-}
-
-.status-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.status-row .status-line {
-  text-align: right;
-}
-
-.moves-strip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  /* Breathing room so a focus ring / the active pill isn't clipped. */
-  padding: 2px;
-  margin: -2px;
-}
-
-.moves-strip::-webkit-scrollbar {
-  display: none;
-}
-
-.move-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.move-number {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: 4px;
-}
-
-.move-item:first-child .move-number {
-  margin-left: 0;
-}
-
-.move-pill {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-}
-
-.move-pill-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--panel-bg);
-  font-weight: 700;
-}
-
 /* ---------- Strategy text ---------- */
 
 .strategy-text {
@@ -1254,7 +1167,7 @@ button + .segmented-active {
      Home has no tab bar and is sized to the viewport exactly. */
   .app-shell,
   .skill-map {
-    padding-bottom: calc(62px + env(safe-area-inset-bottom));
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
   }
 
   .app-shell {
@@ -1309,12 +1222,34 @@ button + .segmented-active {
     flex: none;
   }
 
+  /* During training this never actually scrolls — the two explanations
+     are clamped to fit. It's here for the finished-line state, where an
+     extra card appears and its "+5 more moves" offer would otherwise be
+     clipped out of reach. */
   .app-shell[data-mobile-view="trainer"] .info-panel {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  /* Only the two explanations are clamped — they're the ones that would
+     otherwise push the board off screen. The finished-line card keeps its
+     natural height so its buttons stay reachable by scrolling. */
+  .app-shell[data-mobile-view="trainer"] .info-panel .strategy-card-white,
+  .app-shell[data-mobile-view="trainer"] .info-panel .strategy-card-black {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 12px 14px;
+  }
+
+  .app-shell[data-mobile-view="trainer"] .strategy-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
   }
 
   .app-shell[data-mobile-view="trainer"] .how-to-use {
@@ -1323,18 +1258,10 @@ button + .segmented-active {
 
   /* Everything above and below the board on this screen, so the board
      can take exactly the space that's left over. */
-  /* Side by side with the name, but stacked — laid out in a row the two
-     of them eat 240 of the 335px available and leave the opening name a
-     truncated stub. */
-  .app-shell[data-mobile-view="trainer"] .board-header-settings {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
   .app-shell[data-mobile-view="trainer"] .board-wrap {
     --board-chrome: calc(
-      58px /* header */ + 44px /* toolbar */ + 40px /* gaps */ + 62px /* tab bar */ +
-        150px /* the side explanations, at minimum */
+      34px /* header */ + 44px /* toolbar */ + 40px /* gaps */ + 62px /* tab bar */ +
+        216px /* the two side explanations */
     );
     width: min(100%, calc(100dvh - var(--board-chrome) - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     margin-inline: auto;

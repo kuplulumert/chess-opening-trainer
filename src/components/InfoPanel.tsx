@@ -1,18 +1,11 @@
-import { useEffect, useRef } from "react";
-import type { MoveFeedback, PlayerColor, TrainerMode } from "../hooks/useOpeningTrainer";
+import type { TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { MovePurpose } from "./MovePurpose";
 
 interface InfoPanelProps {
-  playerColor: PlayerColor;
   mode: TrainerMode;
-  history: string[];
   moveIndex: number;
-  totalMoves: number;
   isDone: boolean;
-  feedback: MoveFeedback;
-  wrongAttempts: number;
-  revealedHint: string | null;
   currentComment: string | null;
   isPlayerTurn: boolean;
   canExtend: boolean;
@@ -22,24 +15,21 @@ interface InfoPanelProps {
   onRestart: () => void;
   onNextLine: () => void;
   onExtend: () => void;
-  /** Jump to the position after the first `plies` moves of the line. */
-  onGoTo: (plies: number) => void;
 }
 
 // Hidden per request — kept in place (component and props untouched) in
 // case it comes back later, just not rendered for now.
 const SHOW_MOVE_HINT = false;
 
+// Everything under the board has to share one screen with it, so this is
+// only what the trainee is actually reading: what each side is doing, and
+// — once the line is finished — where to go next. The move counter, the
+// "your move" line and the played-moves list are all things the board
+// itself already shows.
 export function InfoPanel({
-  playerColor,
   mode,
-  history,
   moveIndex,
-  totalMoves,
   isDone,
-  feedback,
-  wrongAttempts,
-  revealedHint,
   currentComment,
   isPlayerTurn,
   canExtend,
@@ -49,27 +39,7 @@ export function InfoPanel({
   onRestart,
   onNextLine,
   onExtend,
-  onGoTo,
 }: InfoPanelProps) {
-  const progressPercent = totalMoves === 0 ? 0 : Math.round((moveIndex / totalMoves) * 100);
-  const colorLabel = playerColor === "w" ? t.white : t.black;
-
-  // Study mode already highlights the move on the board — spelling it out
-  // here as well was just the same information twice.
-  const hintText = mode === "quiz" ? revealedHint : null;
-
-  let statusText: string;
-  if (isDone) statusText = t.lineComplete(mode);
-  else if (!isPlayerTurn) statusText = t.replayingLine;
-  else statusText = feedback === "wrong" ? t.notQuite : t.yourMove(colorLabel);
-
-  // Keep the newest move in view as the strip grows.
-  const stripRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const strip = stripRef.current;
-    if (strip) strip.scrollLeft = strip.scrollWidth;
-  }, [history.length]);
-
   return (
     <aside className="info-panel">
       {SHOW_MOVE_HINT && (
@@ -81,8 +51,6 @@ export function InfoPanel({
         />
       )}
 
-      {/* The teaching content comes first: what each side is doing, right
-          under the board. Settings now live in the board header. */}
       {whiteStrategy && (
         <div className="info-card strategy-card-white">
           <h3 className="moves-title">{t.white}</h3>
@@ -96,26 +64,9 @@ export function InfoPanel({
         </div>
       )}
 
-      <div className="info-card session-card">
-        <div className="progress-track" aria-hidden="true">
-          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-        </div>
-        <div className="status-row">
-          <span className="progress-label">
-            {t.progressLabel(Math.min(moveIndex, totalMoves), totalMoves)}
-          </span>
-          <span className={"status-line" + (isDone ? " status-done" : "")}>{statusText}</span>
-        </div>
-        {hintText && (
-          <p className="hint-line">
-            {t.hintLabel} <strong>{hintText}</strong>
-          </p>
-        )}
-        {!isDone && isPlayerTurn && wrongAttempts > 0 && !hintText && (
-          <p className="hint-line hint-line-muted">{t.wrongAttempts(wrongAttempts)}</p>
-        )}
-
-        {isDone && (
+      {isDone && (
+        <div className="info-card">
+          <p className="status-line status-done">{t.lineComplete(mode)}</p>
           <div className="button-row">
             <button type="button" className="secondary-button" onClick={onRestart}>
               {t.playAgain}
@@ -124,39 +75,16 @@ export function InfoPanel({
               {t.nextOpening}
             </button>
           </div>
-        )}
-        {isDone && canExtend && (
-          <div className="extend-offer">
-            <p className="extend-offer-text">{t.extendPrompt}</p>
-            <button type="button" className="secondary-button" onClick={onExtend}>
-              {t.extendButton}
-            </button>
-          </div>
-        )}
-
-        {history.length > 0 && (
-          <>
-            <div className="session-divider" />
-            {/* Played moves as tappable pills; the last one is the current
-                position. Only what's been played — the rest of the line
-                stays hidden so Practice mode stays a test. */}
-            <div className="moves-strip" ref={stripRef} aria-label={t.movesHeading}>
-              {history.map((san, i) => (
-                <span key={i} className="move-item">
-                  {i % 2 === 0 && <span className="move-number">{i / 2 + 1}.</span>}
-                  <button
-                    type="button"
-                    className={"move-pill" + (i === history.length - 1 ? " move-pill-active" : "")}
-                    onClick={() => onGoTo(i + 1)}
-                  >
-                    {san}
-                  </button>
-                </span>
-              ))}
+          {canExtend && (
+            <div className="extend-offer">
+              <p className="extend-offer-text">{t.extendPrompt}</p>
+              <button type="button" className="secondary-button" onClick={onExtend}>
+                {t.extendButton}
+              </button>
             </div>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }
