@@ -114,9 +114,6 @@ export function InfoPanel({
           </div>
         </div>
         <div className="button-row">
-          <button type="button" className="secondary-button" onClick={onRestart}>
-            {t.restart}
-          </button>
           <button
             type="button"
             className="secondary-button"

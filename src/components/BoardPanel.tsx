@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
+import { preloadMoveSound } from "../utils/sound";
 
 interface BoardPanelProps {
   fen: string;
@@ -14,8 +15,13 @@ interface BoardPanelProps {
   openingName: string;
   whiteStrategy: string | null;
   blackStrategy: string | null;
+  canStepBack: boolean;
+  canStepForward: boolean;
   t: Dictionary;
   onDrop: (from: Square, to: Square) => boolean;
+  onStepBack: () => void;
+  onStepForward: () => void;
+  onRestart: () => void;
 }
 
 function findMoveSquares(fen: string, san: string): { from: Square; to: Square } | null {
@@ -34,10 +40,20 @@ export function BoardPanel({
   openingName,
   whiteStrategy,
   blackStrategy,
+  canStepBack,
+  canStepForward,
   t,
   onDrop,
+  onStepBack,
+  onStepForward,
+  onRestart,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
+
+  // Have the move sound decoded before the first move needs it.
+  useEffect(() => {
+    preloadMoveSound();
+  }, []);
 
   // Tap-to-move selection: touching a piece picks it up, touching a second
   // square plays it there. Cleared on every new position (a fresh move, a
@@ -114,7 +130,49 @@ export function BoardPanel({
 
   return (
     <div className="board-stage">
-      <h2 className="board-opening-name">{openingName}</h2>
+      <div className="board-header">
+        <h2 className="board-opening-name">{openingName}</h2>
+        <div className="board-header-actions">
+          <button
+            type="button"
+            className="board-action"
+            onClick={onRestart}
+            aria-label={t.restart}
+            title={t.restart}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </g>
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="board-action"
+            onClick={onStepBack}
+            disabled={!canStepBack}
+            aria-label={t.stepBack}
+            title={t.stepBack}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="board-action"
+            onClick={onStepForward}
+            disabled={!canStepForward}
+            aria-label={t.stepForward}
+            title={t.stepForward}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
       <div className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}>
         <Chessboard
           options={{

@@ -14,6 +14,13 @@ function moveColor(plyIndex: number): PlayerColor {
   return plyIndex % 2 === 0 ? "w" : "b";
 }
 
+// The position reached after the first `plies` moves of the line.
+function positionAfter(moves: string[], plies: number): Chess {
+  const game = new Chess();
+  for (let i = 0; i < plies; i++) game.move(moves[i]);
+  return game;
+}
+
 // Colors strictly alternate by ply, so a color's most recent played move is
 // either the last played ply itself, or the one right before it.
 function lastStrategyForColor(
@@ -125,6 +132,35 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     [game, isPlayerTurn, line.moves, moveIndex, applyBookMove],
   );
 
+  // Stepping back rewinds to the trainee's *previous turn*, not just one
+  // ply: landing on the opponent's turn instead would have the auto-reply
+  // effect immediately re-play the very move that was just undone.
+  const firstPlayerPly = playerColor === "w" ? 0 : 1;
+  const canStepBack = moveIndex > firstPlayerPly;
+  const canStepForward = !isDone;
+
+  const stepBack = useCallback(() => {
+    let target = moveIndex - 1;
+    while (target >= 0 && moveColor(target) !== playerColor) target--;
+    if (target < 0) return;
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    setGame(positionAfter(line.moves, target));
+    setMoveIndex(target);
+    setFeedback("idle");
+    setWrongAttempts(0);
+    setLastWrongSquares(null);
+    setHintRequested(false);
+    playMoveSound();
+  }, [moveIndex, playerColor, line.moves]);
+
+  // Plays the next book move outright, whoever's turn it is — during the
+  // opponent's reply delay this just skips the wait.
+  const stepForward = useCallback(() => {
+    if (isDone) return;
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    applyBookMove(moveIndex);
+  }, [isDone, moveIndex, applyBookMove]);
+
   const showHint = mode === "study" || hintRequested || wrongAttempts >= WRONG_ATTEMPTS_BEFORE_HINT;
   const revealedHint = showHint && !isDone ? line.moves[moveIndex] : null;
 
@@ -151,5 +187,9 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     attemptMove,
     requestHint: () => setHintRequested(true),
     reset,
+    canStepBack,
+    canStepForward,
+    stepBack,
+    stepForward,
   };
 }

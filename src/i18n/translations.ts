@@ -64,6 +64,8 @@ export interface Dictionary {
   quiz: string;
   study: string;
   restart: string;
+  stepBack: string;
+  stepForward: string;
   hintButton: string;
 
   moveHintTitle: string;
@@ -108,7 +110,9 @@ const en: Dictionary = {
   mode: "Mode",
   quiz: "Practice",
   study: "Study",
-  restart: "↺ Restart",
+  restart: "Restart",
+  stepBack: "Previous move",
+  stepForward: "Next move",
   hintButton: "? Hint",
 
   moveHintTitle: "Move Hint",
@@ -229,7 +233,9 @@ const tr: Dictionary = {
   mode: "Mod",
   quiz: "Pratik",
   study: "Çalışma",
-  restart: "↺ Baştan başla",
+  restart: "Baştan başla",
+  stepBack: "Önceki hamle",
+  stepForward: "Sonraki hamle",
   hintButton: "? İpucu",
 
   moveHintTitle: "Hamle İpucu",

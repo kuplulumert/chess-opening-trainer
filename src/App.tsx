@@ -72,6 +72,17 @@ function App() {
     setProgress(getAllProgress());
   }, [isDone, mode, line.id, playerColor]);
 
+  // Every new run, and every return to the board from another tab, starts
+  // at the top of the page. Partly UX — the board should be in view — but
+  // mostly because on iOS the "taps land a square too low" bug only ever
+  // showed up after the content was swapped underneath a scrolled page
+  // (picking a line from the scrolled openings list, "next opening" from
+  // below the board), never on a fresh load at scroll 0. Resetting the
+  // scroll takes that state off the table.
+  useEffect(() => {
+    if (view === "trainer") window.scrollTo(0, 0);
+  }, [view, runKey]);
+
   // Defences (Sicilian, French, Caro-Kann, ... and individual defensive
   // lines like the Berlin Defence within Ruy Lopez) are trained as Black
   // by default, since that's the side whose repertoire they actually are;
@@ -239,8 +250,13 @@ function App() {
               openingName={line.name}
               whiteStrategy={trainer.whiteStrategy}
               blackStrategy={trainer.blackStrategy}
+              canStepBack={trainer.canStepBack}
+              canStepForward={trainer.canStepForward}
               t={t}
               onDrop={handleDrop}
+              onStepBack={trainer.stepBack}
+              onStepForward={trainer.stepForward}
+              onRestart={handleRestart}
             />
           </main>
           <InfoPanel
