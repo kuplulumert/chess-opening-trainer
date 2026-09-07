@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
@@ -38,6 +38,16 @@ export function BoardPanel({
   onDrop,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
+
+  // A layout shift after mount (e.g. safe-area padding resolving, or any
+  // reflow of the elements around the board) can leave the board's touch
+  // hit-testing keyed to stale square positions, so taps land on the wrong
+  // square. Nudging a resize event once things have settled forces a
+  // re-measure against the final layout.
+  useEffect(() => {
+    const id = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 350);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Tap-to-move selection: touching a piece picks it up, touching a second
   // square plays it there. Cleared on every new position (a fresh move, a

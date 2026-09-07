@@ -61,6 +61,13 @@ export function InfoPanel({
 
   return (
     <aside className="info-panel">
+      <MovePurpose
+        comment={currentComment}
+        moveIndex={moveIndex}
+        awaitingMove={isPlayerTurn}
+        title={t.moveHintTitle}
+      />
+
       <div className="info-card">
         <div className="control-row">
           <span className="control-label">{t.playAs}</span>
@@ -114,13 +121,6 @@ export function InfoPanel({
           </button>
         </div>
       </div>
-
-      <MovePurpose
-        comment={currentComment}
-        moveIndex={moveIndex}
-        awaitingMove={isPlayerTurn}
-        title={t.moveHintTitle}
-      />
 
       <div className="info-card status-card">
         <div className="progress-track" aria-hidden="true">
