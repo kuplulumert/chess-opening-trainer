@@ -2,8 +2,7 @@
 
 .view-switcher {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
   /* This bar is pinned to the very top of the viewport (position: sticky,
      top: 0), so on a notched/Dynamic-Island phone it needs its own
@@ -18,7 +17,21 @@
   z-index: 10;
 }
 
+/* The tab buttons stay in a single row always — on a narrow phone they
+   scroll horizontally rather than wrapping onto a second line. The
+   how-to-use banner (a sibling, not part of this row) gets its own full
+   line below instead of competing for the same row's space. */
+.view-switcher-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .view-switcher button {
+  flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -91,8 +104,6 @@
    bordered area below it. */
 .how-to-use-inline {
   grid-column: unset;
-  flex: 1 1 260px;
-  min-width: 0;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -311,8 +322,15 @@
 }
 
 .board-stage {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: min(100%, 640px);
+}
+
+.board-opening-name {
+  font-size: 19px;
+  text-align: center;
 }
 
 .board-wrap {
@@ -334,49 +352,6 @@
 
 .board-wrap * {
   -webkit-user-drag: none;
-}
-
-/* Move explanations, anchored to the square the color just played — white
-   always to the left of its square, black always to the right, so the two
-   never land on the same side. They sit on top of (not inside) the board
-   so the full sentence isn't clipped by its rounded corners, and fade out
-   the instant the trainee touches a piece to make their own move. */
-.board-annotation {
-  position: absolute;
-  z-index: 5;
-  width: max(170px, 36%);
-  max-width: 280px;
-  transform: translateY(-50%);
-  padding: 8px 11px;
-  border-radius: 8px;
-  font-size: 12.5px;
-  line-height: 1.4;
-  box-shadow: var(--shadow);
-  pointer-events: none;
-  animation: board-annotation-in 200ms ease;
-}
-
-@keyframes board-annotation-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.board-annotation-white {
-  background: var(--panel-bg);
-  border: 1px solid var(--white-side);
-  border-right: 3px solid var(--white-side);
-  color: var(--text-h);
-}
-
-.board-annotation-black {
-  background: var(--panel-bg);
-  border: 1px solid var(--black-side);
-  border-left: 3px solid var(--black-side);
-  color: var(--text-h);
 }
 
 .board-shake {
@@ -412,61 +387,6 @@
   border-radius: 12px;
   box-shadow: var(--shadow);
   padding: 16px;
-}
-
-.info-card h2 {
-  font-size: 17px;
-}
-
-.info-eco {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.opening-name-wrap {
-  position: relative;
-  display: inline-block;
-}
-
-.opening-name-wrap h2 {
-  cursor: help;
-  border-bottom: 1px dashed var(--text-muted);
-  width: fit-content;
-}
-
-.opening-description-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 8px;
-  width: max-content;
-  max-width: 260px;
-  background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  padding: 10px 12px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--text);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition:
-    opacity 150ms ease,
-    transform 150ms ease,
-    visibility 150ms;
-  z-index: 20;
-  pointer-events: none;
-}
-
-.opening-name-wrap:hover .opening-description-tooltip,
-.opening-name-wrap:focus-visible .opening-description-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
 }
 
 .move-purpose {
@@ -697,30 +617,6 @@ button + .segmented-active {
 
 .strategy-card-black .moves-title {
   color: var(--black-side);
-}
-
-.strategy-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  text-align: left;
-}
-
-.strategy-toggle .moves-title {
-  margin-bottom: 0;
-}
-
-.strategy-chevron {
-  flex-shrink: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-  color: inherit;
 }
 
 .strategy-card-white .strategy-text,

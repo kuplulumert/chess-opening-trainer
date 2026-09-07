@@ -133,30 +133,32 @@ function App() {
   return (
     <>
       <div className="view-switcher">
-        <button
-          type="button"
-          className={view === "trainer" ? "view-switcher-active" : ""}
-          onClick={() => setView("trainer")}
-        >
-          {t.map.trainerNavLabel}
-        </button>
-        <button
-          type="button"
-          className={
-            "view-switcher-openings" + (view === "openings" ? " view-switcher-active" : "")
-          }
-          onClick={() => setView("openings")}
-        >
-          {t.map.openingsNavLabel}
-        </button>
-        <button
-          type="button"
-          className={view === "map" ? "view-switcher-active" : ""}
-          onClick={() => setView("map")}
-        >
-          {t.map.navLabel}
-        </button>
-        <LanguageToggle language={language} label={t.switchToLanguage} onToggle={toggleLanguage} />
+        <div className="view-switcher-tabs">
+          <button
+            type="button"
+            className={view === "trainer" ? "view-switcher-active" : ""}
+            onClick={() => setView("trainer")}
+          >
+            {t.map.trainerNavLabel}
+          </button>
+          <button
+            type="button"
+            className={
+              "view-switcher-openings" + (view === "openings" ? " view-switcher-active" : "")
+            }
+            onClick={() => setView("openings")}
+          >
+            {t.map.openingsNavLabel}
+          </button>
+          <button
+            type="button"
+            className={view === "map" ? "view-switcher-active" : ""}
+            onClick={() => setView("map")}
+          >
+            {t.map.navLabel}
+          </button>
+          <LanguageToggle language={language} label={t.switchToLanguage} onToggle={toggleLanguage} />
+        </div>
         {view === "trainer" && (
           <HowToUseBanner
             text={t.howToUse}
@@ -190,14 +192,14 @@ function App() {
               feedback={trainer.feedback}
               lastWrongSquares={trainer.lastWrongSquares}
               hintSan={trainer.revealedHint}
-              history={trainer.history}
+              openingName={line.name}
               whiteStrategy={trainer.whiteStrategy}
               blackStrategy={trainer.blackStrategy}
+              t={t}
               onDrop={handleDrop}
             />
           </main>
           <InfoPanel
-            line={line}
             playerColor={playerColor}
             mode={mode}
             history={trainer.history}
@@ -208,8 +210,6 @@ function App() {
             wrongAttempts={trainer.wrongAttempts}
             revealedHint={trainer.revealedHint}
             currentComment={trainer.currentComment}
-            whiteStrategy={trainer.whiteStrategy}
-            blackStrategy={trainer.blackStrategy}
             isPlayerTurn={trainer.isPlayerTurn}
             canExtend={Boolean(line.extension) && !extended}
             t={t}

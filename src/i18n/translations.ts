@@ -69,7 +69,6 @@ export interface Dictionary {
   wrongAttempts: (n: number) => string;
   movesHeading: string;
   emptyMoves: string;
-  strategyToggleAriaLabel: (color: string, expanded: boolean) => string;
 
   switchToLight: string;
   switchToDark: string;
@@ -115,7 +114,6 @@ const en: Dictionary = {
   wrongAttempts: (n) => `${n} wrong attempt${n > 1 ? "s" : ""} — keep trying.`,
   movesHeading: "Moves",
   emptyMoves: "—",
-  strategyToggleAriaLabel: (color, expanded) => `${expanded ? "Hide" : "Show"} ${color} strategy`,
 
   switchToLight: "Switch to light mode",
   switchToDark: "Switch to dark mode",
@@ -228,8 +226,6 @@ const tr: Dictionary = {
   wrongAttempts: (n) => `${n} yanlış deneme — denemeye devam et.`,
   movesHeading: "Hamleler",
   emptyMoves: "—",
-  strategyToggleAriaLabel: (color, expanded) =>
-    `${color} stratejisini ${expanded ? "gizle" : "göster"}`,
 
   switchToLight: "Açık temaya geç",
   switchToDark: "Koyu temaya geç",

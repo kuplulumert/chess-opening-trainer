@@ -1,11 +1,8 @@
-import { useState } from "react";
-import type { OpeningLine } from "../data/openings";
 import type { MoveFeedback, PlayerColor, TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { MovePurpose } from "./MovePurpose";
 
 interface InfoPanelProps {
-  line: OpeningLine;
   playerColor: PlayerColor;
   mode: TrainerMode;
   history: string[];
@@ -16,8 +13,6 @@ interface InfoPanelProps {
   wrongAttempts: number;
   revealedHint: string | null;
   currentComment: string | null;
-  whiteStrategy: string | null;
-  blackStrategy: string | null;
   isPlayerTurn: boolean;
   canExtend: boolean;
   t: Dictionary;
@@ -41,7 +36,6 @@ function formatHistory(history: string[]): string {
 }
 
 export function InfoPanel({
-  line,
   playerColor,
   mode,
   history,
@@ -52,8 +46,6 @@ export function InfoPanel({
   wrongAttempts,
   revealedHint,
   currentComment,
-  whiteStrategy,
-  blackStrategy,
   isPlayerTurn,
   canExtend,
   t,
@@ -67,24 +59,8 @@ export function InfoPanel({
   const progressPercent = totalMoves === 0 ? 0 : Math.round((moveIndex / totalMoves) * 100);
   const colorLabel = playerColor === "w" ? t.white : t.black;
 
-  // Collapsed by default so the two strategy cards don't push the hint/status
-  // cards further down the page — most useful right after the move purpose
-  // note, so they stay easy to reach on narrow screens.
-  const [whiteExpanded, setWhiteExpanded] = useState(false);
-  const [blackExpanded, setBlackExpanded] = useState(false);
-
   return (
     <aside className="info-panel">
-      <div className="info-card">
-        <div className="opening-name-wrap" tabIndex={0}>
-          <h2>{line.name}</h2>
-          <div className="opening-description-tooltip">{line.description}</div>
-        </div>
-        <p className="info-eco">
-          {line.eco} · {line.family}
-        </p>
-      </div>
-
       <div className="info-card">
         <div className="control-row">
           <span className="control-label">{t.playAs}</span>
@@ -145,42 +121,6 @@ export function InfoPanel({
         awaitingMove={isPlayerTurn}
         title={t.moveHintTitle}
       />
-
-      {whiteStrategy && (
-        <div className="info-card strategy-card-white">
-          <button
-            type="button"
-            className="strategy-toggle"
-            aria-expanded={whiteExpanded}
-            aria-label={t.strategyToggleAriaLabel(t.white, whiteExpanded)}
-            onClick={() => setWhiteExpanded((v) => !v)}
-          >
-            <h3 className="moves-title">{t.white}</h3>
-            <span className="strategy-chevron" aria-hidden="true">
-              {whiteExpanded ? "−" : "+"}
-            </span>
-          </button>
-          {whiteExpanded && <p className="strategy-text">{whiteStrategy}</p>}
-        </div>
-      )}
-
-      {blackStrategy && (
-        <div className="info-card strategy-card-black">
-          <button
-            type="button"
-            className="strategy-toggle"
-            aria-expanded={blackExpanded}
-            aria-label={t.strategyToggleAriaLabel(t.black, blackExpanded)}
-            onClick={() => setBlackExpanded((v) => !v)}
-          >
-            <h3 className="moves-title">{t.black}</h3>
-            <span className="strategy-chevron" aria-hidden="true">
-              {blackExpanded ? "−" : "+"}
-            </span>
-          </button>
-          {blackExpanded && <p className="strategy-text">{blackStrategy}</p>}
-        </div>
-      )}
 
       <div className="info-card status-card">
         <div className="progress-track" aria-hidden="true">

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
+import type { Dictionary } from "../i18n/translations";
 
 interface BoardPanelProps {
   fen: string;
@@ -10,9 +11,10 @@ interface BoardPanelProps {
   feedback: "idle" | "correct" | "wrong";
   lastWrongSquares: { from: Square; to: Square } | null;
   hintSan: string | null;
-  history: string[];
+  openingName: string;
   whiteStrategy: string | null;
   blackStrategy: string | null;
+  t: Dictionary;
   onDrop: (from: Square, to: Square) => boolean;
 }
 
@@ -22,61 +24,6 @@ function findMoveSquares(fen: string, san: string): { from: Square; to: Square }
   return match ? { from: match.from as Square, to: match.to as Square } : null;
 }
 
-// Colors strictly alternate by ply, so the last square a color moved to is
-// found by replaying the played moves and keeping the most recent one whose
-// ply index has that color's parity.
-function lastMoveSquareForColor(history: string[], color: PlayerColor): Square | null {
-  const chess = new Chess();
-  let square: Square | null = null;
-  history.forEach((san, ply) => {
-    const move = chess.move(san);
-    if (move && ply % 2 === (color === "w" ? 0 : 1)) square = move.to as Square;
-  });
-  return square;
-}
-
-// Board squares are laid out as an 8x8 grid of equal percentage cells; this
-// turns a square name into that cell's (col, row) from the top-left corner
-// of the board as currently drawn, accounting for board orientation.
-function squareToCell(square: Square, orientation: "white" | "black") {
-  const file = square.charCodeAt(0) - "a".charCodeAt(0);
-  const rank = Number(square[1]) - 1;
-  const col = orientation === "white" ? file : 7 - file;
-  const row = orientation === "white" ? 7 - rank : rank;
-  return { col, row };
-}
-
-interface AnnotationProps {
-  cell: { col: number; row: number };
-  text: string;
-  placementSide: "left" | "right";
-  color: "white" | "black";
-}
-
-const CELL_PERCENT = 100 / 8;
-
-// Anchored beside the square on whichever side has more room (falling back,
-// when both colors would otherwise land on the same side of nearby
-// squares, to pushing one to the other side so they don't overlap) — and
-// capped to that available width so the box can never run off the edge of
-// the board, however close to the edge the square itself is.
-function BoardAnnotation({ cell, text, placementSide, color }: AnnotationProps) {
-  const { col, row } = cell;
-  const availableCells = placementSide === "left" ? col : 7 - col;
-  const style: React.CSSProperties = {
-    top: `${row * CELL_PERCENT + CELL_PERCENT / 2}%`,
-    maxWidth: `min(280px, ${availableCells * CELL_PERCENT - 2}%)`,
-    [placementSide === "left" ? "right" : "left"]: `calc(${
-      placementSide === "left" ? 100 - col * CELL_PERCENT : (col + 1) * CELL_PERCENT
-    }% + 6px)`,
-  };
-  return (
-    <div className={`board-annotation board-annotation-${color}`} style={style}>
-      {text}
-    </div>
-  );
-}
-
 export function BoardPanel({
   fen,
   playerColor,
@@ -84,57 +31,26 @@ export function BoardPanel({
   feedback,
   lastWrongSquares,
   hintSan,
-  history,
+  openingName,
   whiteStrategy,
   blackStrategy,
+  t,
   onDrop,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
 
-  // Annotations reappear for every newly played move, then disappear as soon
-  // as the trainee touches a piece to make their own next move — they're a
-  // glance-and-go explanation, not something to fight with while dragging.
-  // Reset synchronously during render (rather than in an effect) so the
-  // reveal isn't delayed by an extra render once a move lands. A pending
-  // tap-to-move selection is cleared the same way, on the same trigger.
-  const [dismissed, setDismissed] = useState(false);
+  // Tap-to-move selection: touching a piece picks it up, touching a second
+  // square plays it there. Cleared on every new position (a fresh move, a
+  // reset, or a line change all produce a new fen) — reset synchronously
+  // during render rather than in an effect, matching the pattern used
+  // elsewhere in this codebase, so a reset can't leave a stale selection
+  // visible for even one frame.
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [prevFen, setPrevFen] = useState(fen);
   if (prevFen !== fen) {
     setPrevFen(fen);
-    setDismissed(false);
     setSelectedSquare(null);
   }
-
-  const whiteSquare = useMemo(
-    () => (whiteStrategy ? lastMoveSquareForColor(history, "w") : null),
-    [history, whiteStrategy],
-  );
-  const blackSquare = useMemo(
-    () => (blackStrategy ? lastMoveSquareForColor(history, "b") : null),
-    [history, blackStrategy],
-  );
-
-  // Each annotation defaults to whichever side of its square has more room,
-  // so a square near the edge never pushes its box off the board. When both
-  // colors' squares are close enough (same rows) that they'd land on the
-  // same side and overlap, white is pushed to the other side instead.
-  const { whiteCell, blackCell, whitePlacement, blackPlacement } = useMemo(() => {
-    const wCell = whiteSquare ? squareToCell(whiteSquare, orientation) : null;
-    const bCell = blackSquare ? squareToCell(blackSquare, orientation) : null;
-    const sideWithMoreRoom = (col: number): "left" | "right" => (col <= 3 ? "right" : "left");
-    let wSide = wCell ? sideWithMoreRoom(wCell.col) : "left";
-    const bSide = bCell ? sideWithMoreRoom(bCell.col) : "right";
-    if (wCell && bCell && wSide === bSide && Math.abs(wCell.row - bCell.row) <= 2) {
-      const flipped = wSide === "left" ? "right" : "left";
-      const flippedRoom = flipped === "left" ? wCell.col : 7 - wCell.col;
-      // Only flip white out of the way if the other side actually has room —
-      // a square right at the edge (e.g. the a-file) has none on that side,
-      // so overlapping is the lesser evil there.
-      if (flippedRoom >= 2) wSide = flipped;
-    }
-    return { whiteCell: wCell, blackCell: bCell, whitePlacement: wSide, blackPlacement: bSide };
-  }, [whiteSquare, blackSquare, orientation]);
 
   const hintSquares = useMemo(
     () => (hintSan ? findMoveSquares(fen, hintSan) : null),
@@ -198,14 +114,8 @@ export function BoardPanel({
 
   return (
     <div className="board-stage">
-      <div
-        className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}
-        // Fires on the very first touch/click anywhere on the board — including
-        // an empty square or a piece that never actually gets dragged — rather
-        // than waiting for react-chessboard's own drag-start (which only fires
-        // once a piece has moved past its activation threshold).
-        onPointerDown={() => setDismissed(true)}
-      >
+      <h2 className="board-opening-name">{openingName}</h2>
+      <div className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}>
         <Chessboard
           options={{
             id: "opening-trainer-board",
@@ -222,11 +132,17 @@ export function BoardPanel({
           }}
         />
       </div>
-      {!dismissed && whiteCell && whiteStrategy && (
-        <BoardAnnotation cell={whiteCell} text={whiteStrategy} placementSide={whitePlacement} color="white" />
+      {whiteStrategy && (
+        <div className="info-card strategy-card-white">
+          <h3 className="moves-title">{t.white}</h3>
+          <p className="strategy-text">{whiteStrategy}</p>
+        </div>
       )}
-      {!dismissed && blackCell && blackStrategy && (
-        <BoardAnnotation cell={blackCell} text={blackStrategy} placementSide={blackPlacement} color="black" />
+      {blackStrategy && (
+        <div className="info-card strategy-card-black">
+          <h3 className="moves-title">{t.black}</h3>
+          <p className="strategy-text">{blackStrategy}</p>
+        </div>
       )}
     </div>
   );
