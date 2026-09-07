@@ -199,6 +199,14 @@
   }
 }
 
+/* Full width, so the two repertoires read as a pair of tabs over the list
+   rather than a stray control floating beside it. */
+.sidebar-side-filter button {
+  flex: 1;
+  padding: 8px;
+  font-size: 13px;
+}
+
 .search-input {
   width: 100%;
   /* 16px, not the 15px body size: iOS auto-zooms the page when a focused

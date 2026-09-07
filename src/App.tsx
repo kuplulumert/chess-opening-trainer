@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Square } from "chess.js";
 import { openings as openingsEn, type OpeningLine } from "./data/openings";
 import { getLocalizedOpenings } from "./data/localize";
+import { sideOf } from "./data/side";
 import { Sidebar } from "./components/Sidebar";
 import { HowToUseBanner } from "./components/HowToUseBanner";
 import { BoardPanel } from "./components/BoardPanel";
@@ -91,16 +92,12 @@ function App() {
     hideSplash();
   }, []);
 
-  // Defences (Sicilian, French, Caro-Kann, ... and individual defensive
-  // lines like the Berlin Defence within Ruy Lopez) are trained as Black
-  // by default, since that's the side whose repertoire they actually are;
-  // everything else defaults to White. Looked up from the canonical
-  // English data so this doesn't depend on the current UI language.
+  // A line is trained as whichever side's repertoire it belongs to — the
+  // same classification the openings list is split by, so picking from
+  // one of its two tabs always lands you on that colour.
   const selectOpening = useCallback((id: string) => {
     setSelectedId(id);
-    const canonical = openingsEn.find((o) => o.id === id);
-    const isDefence = canonical?.family.includes("Defence") || canonical?.name.includes("Defence");
-    setPlayerColor(isDefence ? "b" : "w");
+    setPlayerColor(sideOf(id));
   }, []);
 
   const handleSelect = useCallback(
