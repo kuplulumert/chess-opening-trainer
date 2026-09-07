@@ -11,5 +11,17 @@ class MainViewController: CAPBridgeViewController {
         super.viewDidLoad()
         webView?.scrollView.delaysContentTouches = false
         webView?.scrollView.canCancelContentTouches = false
+        // The page already reserves safe-area space itself via CSS
+        // env(safe-area-inset-*) — without this, WKWebView's UIScrollView
+        // ALSO applies its own automatic content inset for the same safe
+        // area on top of that, so the visually laid-out content and the
+        // coordinate space touch events are reported in drift apart by
+        // roughly the status-bar/notch height. That's consistent with taps
+        // landing a row off on the chessboard: react-chessboard compares a
+        // live touch coordinate against a live getBoundingClientRect() of
+        // the square, so a mismatch there points at WKWebView reporting
+        // touches in a different frame than the one CSS laid content out
+        // in, not at anything stale in the JS layer.
+        webView?.scrollView.contentInsetAdjustmentBehavior = .never
     }
 }
