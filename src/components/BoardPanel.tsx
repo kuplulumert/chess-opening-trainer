@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { preloadMoveSound } from "../utils/sound";
+import { isTouchDebugEnabled, setTouchDebugEnabled } from "../utils/touchDebug";
+import { TouchDebug } from "./TouchDebug";
 
 interface BoardPanelProps {
   fen: string;
@@ -54,6 +56,20 @@ export function BoardPanel({
   useEffect(() => {
     preloadMoveSound();
   }, []);
+
+  // Temporary: 5 quick taps on the opening name toggles the on-device
+  // touch diagnostics (see TouchDebug).
+  const [touchDebug, setTouchDebug] = useState(isTouchDebugEnabled);
+  const nameTaps = useRef<number[]>([]);
+  function handleNameTap(): void {
+    const now = Date.now();
+    nameTaps.current = [...nameTaps.current.filter((at) => now - at < 3000), now];
+    if (nameTaps.current.length < 5) return;
+    nameTaps.current = [];
+    const next = !touchDebug;
+    setTouchDebugEnabled(next);
+    setTouchDebug(next);
+  }
 
   // Tap-to-move selection: touching a piece picks it up, touching a second
   // square plays it there. Cleared on every new position (a fresh move, a
@@ -130,8 +146,11 @@ export function BoardPanel({
 
   return (
     <div className="board-stage">
+      {touchDebug && <TouchDebug />}
       <div className="board-header">
-        <h2 className="board-opening-name">{openingName}</h2>
+        <h2 className="board-opening-name" onClick={handleNameTap}>
+          {openingName}
+        </h2>
         <div className="board-header-actions">
           <button
             type="button"
