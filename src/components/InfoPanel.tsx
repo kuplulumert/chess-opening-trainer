@@ -16,9 +16,9 @@ interface InfoPanelProps {
   currentComment: string | null;
   isPlayerTurn: boolean;
   canExtend: boolean;
+  whiteStrategy: string | null;
+  blackStrategy: string | null;
   t: Dictionary;
-  onColorChange: (color: PlayerColor) => void;
-  onModeChange: (mode: TrainerMode) => void;
   onRestart: () => void;
   onNextLine: () => void;
   onExtend: () => void;
@@ -43,9 +43,9 @@ export function InfoPanel({
   currentComment,
   isPlayerTurn,
   canExtend,
+  whiteStrategy,
+  blackStrategy,
   t,
-  onColorChange,
-  onModeChange,
   onRestart,
   onNextLine,
   onExtend,
@@ -81,46 +81,22 @@ export function InfoPanel({
         />
       )}
 
-      <div className="info-card session-card">
-        {/* Session settings, changed once and then left alone — two
-            self-explanatory segments on one line, no labels. */}
-        <div className="settings-row">
-          <div className="segmented" role="group" aria-label={t.playAs}>
-            <button
-              type="button"
-              className={playerColor === "w" ? "segmented-active" : ""}
-              onClick={() => onColorChange("w")}
-            >
-              {t.white}
-            </button>
-            <button
-              type="button"
-              className={playerColor === "b" ? "segmented-active" : ""}
-              onClick={() => onColorChange("b")}
-            >
-              {t.black}
-            </button>
-          </div>
-          <div className="segmented" role="group" aria-label={t.mode}>
-            <button
-              type="button"
-              className={mode === "quiz" ? "segmented-active" : ""}
-              onClick={() => onModeChange("quiz")}
-            >
-              {t.quiz}
-            </button>
-            <button
-              type="button"
-              className={mode === "study" ? "segmented-active" : ""}
-              onClick={() => onModeChange("study")}
-            >
-              {t.study}
-            </button>
-          </div>
+      {/* The teaching content comes first: what each side is doing, right
+          under the board. Settings now live in the board header. */}
+      {whiteStrategy && (
+        <div className="info-card strategy-card-white">
+          <h3 className="moves-title">{t.white}</h3>
+          <p className="strategy-text">{whiteStrategy}</p>
         </div>
+      )}
+      {blackStrategy && (
+        <div className="info-card strategy-card-black">
+          <h3 className="moves-title">{t.black}</h3>
+          <p className="strategy-text">{blackStrategy}</p>
+        </div>
+      )}
 
-        <div className="session-divider" />
-
+      <div className="info-card session-card">
         <div className="progress-track" aria-hidden="true">
           <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
         </div>

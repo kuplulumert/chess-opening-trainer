@@ -6,7 +6,11 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   backgroundColor: '#14151a',
   ios: {
-    contentInset: 'automatic',
+    // 'never', matching MainViewController: the page reserves safe-area
+    // space itself via CSS env(safe-area-inset-*), so WKWebView must not
+    // also add its own inset. Leaving this on 'automatic' contradicted
+    // the Swift side and doubled the offset the layout is built around.
+    contentInset: 'never',
     backgroundColor: '#14151a',
   },
   plugins: {

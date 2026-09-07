@@ -209,7 +209,6 @@
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
-  font-size: 13px;
 }
 
 .search-input:focus {
@@ -332,9 +331,36 @@
   width: min(100%, 640px);
 }
 
+.board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+}
+
 .board-opening-name {
-  font-size: 19px;
+  font-size: 17px;
   text-align: left;
+  /* Yields to the settings beside it rather than pushing them off. */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-header-settings {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Tight on purpose: these two share a row with the opening name, and
+   every pixel they give back is a character of the name that survives. */
+.segmented-compact button {
+  font-size: 11px;
+  padding: 5px 7px;
 }
 
 .board-toolbar {
@@ -1113,23 +1139,13 @@ button + .segmented-active {
   animation: intro-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 820ms both;
 }
 
-@keyframes intro-tab-bar {
-  from {
-    transform: translateY(110%);
-  }
-  to {
-    transform: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .home-screen-intro .home-logo,
   .home-screen-intro .home-hero::before,
   .home-screen-intro .home-title,
   .home-screen-intro .home-subtitle,
   .home-screen-intro .home-actions > *,
-  .home-screen-intro .home-theme-toggle,
-  .tab-bar {
+  .home-screen-intro .home-theme-toggle {
     animation: none;
   }
 }
@@ -1177,9 +1193,6 @@ button + .segmented-active {
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
-  /* Mounted once at the app root, so this only ever plays on launch —
-     timed to slide up as the last beat of the home intro. */
-  animation: intro-tab-bar 560ms cubic-bezier(0.16, 1, 0.3, 1) 640ms both;
 }
 
 .tab-bar-item {
@@ -1237,8 +1250,10 @@ button + .segmented-active {
     display: flex;
   }
 
-  /* Room for the fixed tab bar under the last content. */
-  body {
+  /* Room for the fixed tab bar under the last content. Not on body —
+     Home has no tab bar and is sized to the viewport exactly. */
+  .app-shell,
+  .skill-map {
     padding-bottom: calc(62px + env(safe-area-inset-bottom));
   }
 
@@ -1260,11 +1275,69 @@ button + .segmented-active {
     order: -2;
   }
 
+  /* Home fills the viewport and centres itself — no page scroll. */
+  .home-screen {
+    min-height: 100dvh;
+    justify-content: center;
+    gap: 24px;
+  }
+
   /* Trainer tab: board first, then the move explanation/hints in the
      info panel right underneath it — the opening list lives on its own
      tab instead of pushing the info panel down the page. */
   .app-shell[data-mobile-view="trainer"] .sidebar {
     display: none;
+  }
+
+  /* The trainer is a fixed-height screen, not a scrolling page: header,
+     board and its controls are pinned, and only the panel underneath
+     (side explanations, status, moves) scrolls if its text runs long.
+     Besides looking better, this keeps the page scroll offset out of the
+     picture entirely — every report of taps landing a square too low has
+     been on a scrolled page. */
+  .app-shell[data-mobile-view="trainer"] {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    overflow: hidden;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  .app-shell[data-mobile-view="trainer"] .board-column {
+    flex: none;
+  }
+
+  .app-shell[data-mobile-view="trainer"] .info-panel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 10px;
+  }
+
+  .app-shell[data-mobile-view="trainer"] .how-to-use {
+    flex: none;
+  }
+
+  /* Everything above and below the board on this screen, so the board
+     can take exactly the space that's left over. */
+  /* Side by side with the name, but stacked — laid out in a row the two
+     of them eat 240 of the 335px available and leave the opening name a
+     truncated stub. */
+  .app-shell[data-mobile-view="trainer"] .board-header-settings {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .app-shell[data-mobile-view="trainer"] .board-wrap {
+    --board-chrome: calc(
+      58px /* header */ + 44px /* toolbar */ + 40px /* gaps */ + 62px /* tab bar */ +
+        150px /* the side explanations, at minimum */
+    );
+    width: min(100%, calc(100dvh - var(--board-chrome) - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    margin-inline: auto;
   }
 
   /* Openings tab: just the opening list (with its language/theme

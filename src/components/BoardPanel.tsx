@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
-import type { PlayerColor } from "../hooks/useOpeningTrainer";
+import type { PlayerColor, TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { preloadMoveSound } from "../utils/sound";
 import { isTouchDebugEnabled, setTouchDebugEnabled } from "../utils/touchDebug";
@@ -15,13 +15,14 @@ interface BoardPanelProps {
   lastWrongSquares: { from: Square; to: Square } | null;
   hintSan: string | null;
   openingName: string;
-  whiteStrategy: string | null;
-  blackStrategy: string | null;
   canStepBack: boolean;
   canStepForward: boolean;
   /** Practice mode only — Study mode already shows the move on the board. */
   hintVisible: boolean;
   canHint: boolean;
+  mode: TrainerMode;
+  onColorChange: (color: PlayerColor) => void;
+  onModeChange: (mode: TrainerMode) => void;
   t: Dictionary;
   onDrop: (from: Square, to: Square) => boolean;
   onStepBack: () => void;
@@ -44,12 +45,13 @@ export function BoardPanel({
   lastWrongSquares,
   hintSan,
   openingName,
-  whiteStrategy,
-  blackStrategy,
   canStepBack,
   canStepForward,
   hintVisible,
   canHint,
+  mode,
+  onColorChange,
+  onModeChange,
   t,
   onDrop,
   onStepBack,
@@ -154,9 +156,48 @@ export function BoardPanel({
   return (
     <div className="board-stage">
       {touchDebug && <TouchDebug />}
-      <h2 className="board-opening-name" onClick={handleNameTap}>
-        {openingName}
-      </h2>
+      {/* Name and the two session settings share one row — the settings
+          used to sit in their own labelled block below the board, which
+          cost a whole row of vertical space the board needs. */}
+      <div className="board-header">
+        <h2 className="board-opening-name" onClick={handleNameTap}>
+          {openingName}
+        </h2>
+        <div className="board-header-settings">
+          <div className="segmented segmented-compact" role="group" aria-label={t.playAs}>
+            <button
+              type="button"
+              className={playerColor === "w" ? "segmented-active" : ""}
+              onClick={() => onColorChange("w")}
+            >
+              {t.white}
+            </button>
+            <button
+              type="button"
+              className={playerColor === "b" ? "segmented-active" : ""}
+              onClick={() => onColorChange("b")}
+            >
+              {t.black}
+            </button>
+          </div>
+          <div className="segmented segmented-compact" role="group" aria-label={t.mode}>
+            <button
+              type="button"
+              className={mode === "quiz" ? "segmented-active" : ""}
+              onClick={() => onModeChange("quiz")}
+            >
+              {t.quiz}
+            </button>
+            <button
+              type="button"
+              className={mode === "study" ? "segmented-active" : ""}
+              onClick={() => onModeChange("study")}
+            >
+              {t.study}
+            </button>
+          </div>
+        </div>
+      </div>
       <div className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}>
         <Chessboard
           options={{
@@ -237,18 +278,6 @@ export function BoardPanel({
           </svg>
         </button>
       </div>
-      {whiteStrategy && (
-        <div className="info-card strategy-card-white">
-          <h3 className="moves-title">{t.white}</h3>
-          <p className="strategy-text">{whiteStrategy}</p>
-        </div>
-      )}
-      {blackStrategy && (
-        <div className="info-card strategy-card-black">
-          <h3 className="moves-title">{t.black}</h3>
-          <p className="strategy-text">{blackStrategy}</p>
-        </div>
-      )}
     </div>
   );
 }

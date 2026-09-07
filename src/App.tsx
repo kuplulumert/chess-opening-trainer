@@ -255,8 +255,9 @@ function App() {
               lastWrongSquares={trainer.lastWrongSquares}
               hintSan={trainer.revealedHint}
               openingName={line.name}
-              whiteStrategy={trainer.whiteStrategy}
-              blackStrategy={trainer.blackStrategy}
+              mode={mode}
+              onColorChange={setPlayerColor}
+              onModeChange={setMode}
               canStepBack={trainer.canStepBack}
               canStepForward={trainer.canStepForward}
               t={t}
@@ -282,9 +283,9 @@ function App() {
             currentComment={trainer.currentComment}
             isPlayerTurn={trainer.isPlayerTurn}
             canExtend={Boolean(line.extension) && !extended}
+            whiteStrategy={trainer.whiteStrategy}
+            blackStrategy={trainer.blackStrategy}
             t={t}
-            onColorChange={setPlayerColor}
-            onModeChange={setMode}
             onRestart={handleRestart}
             onNextLine={handleNextLine}
             onExtend={handleExtend}
@@ -303,7 +304,9 @@ function App() {
         </div>
       )}
 
-      <TabBar view={view} t={t} onChange={setView} />
+      {/* Not on Home: its own cards already are the navigation, so a tab
+          bar underneath them just says the same thing twice. */}
+      {view !== "home" && <TabBar view={view} t={t} onChange={setView} />}
     </>
   );
 }
