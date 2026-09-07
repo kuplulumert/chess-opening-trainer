@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import type { OpeningLine } from "../data/openings";
+import { playMoveSound } from "../utils/sound";
 
 export type PlayerColor = "w" | "b";
 export type TrainerMode = "quiz" | "study";
@@ -62,6 +63,7 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
       next.move(line.moves[index]);
       return next;
     });
+    playMoveSound();
     setMoveIndex(index + 1);
     setFeedback("idle");
     setWrongAttempts(0);

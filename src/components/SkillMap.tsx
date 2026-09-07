@@ -32,6 +32,14 @@ export function SkillMap({ openings, progress, t, onTrainLine }: SkillMapProps) 
 
   return (
     <div className="skill-map">
+      <div className="skill-map-hero">
+        <img
+          src={`${import.meta.env.BASE_URL}skillmap-icon.png`}
+          alt=""
+          className="skill-map-hero-icon"
+        />
+      </div>
+
       <HowToUseBanner
         text={t.map.howToUse}
         dismissLabel={t.dismissGuide}

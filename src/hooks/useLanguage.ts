@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { dictionaries, type Language } from "../i18n/translations";
 
 const STORAGE_KEY = "chess-opening-trainer-language";
@@ -27,9 +27,5 @@ export function useLanguage() {
     }
   }, [language]);
 
-  const toggleLanguage = useCallback(() => {
-    setLanguage((l) => (l === "en" ? "tr" : "en"));
-  }, []);
-
-  return { language, t: dictionaries[language], toggleLanguage };
+  return { language, t: dictionaries[language], setLanguage };
 }

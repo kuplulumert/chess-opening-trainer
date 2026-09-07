@@ -4,11 +4,11 @@ import { openings as openingsEn, type OpeningLine } from "./data/openings";
 import { getLocalizedOpenings } from "./data/localize";
 import { Sidebar } from "./components/Sidebar";
 import { HowToUseBanner } from "./components/HowToUseBanner";
-import { LanguageToggle } from "./components/LanguageToggle";
 import { BoardPanel } from "./components/BoardPanel";
 import { InfoPanel } from "./components/InfoPanel";
 import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
+import { HomeScreen } from "./components/HomeScreen";
 import { getAllProgress, recordCompletion } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
 import { useTheme } from "./hooks/useTheme";
@@ -22,9 +22,9 @@ function App() {
   const [progress, setProgress] = useState(() => getAllProgress());
   const [extended, setExtended] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
-  const [view, setView] = useState<"trainer" | "openings" | "map">("trainer");
+  const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
   const { theme, toggleTheme } = useTheme();
-  const { language, t, toggleLanguage } = useLanguage();
+  const { language, t, setLanguage } = useLanguage();
 
   const openings = useMemo(() => getLocalizedOpenings(language), [language]);
   const line = openings.find((o) => o.id === selectedId) ?? openings[0];
@@ -132,44 +132,79 @@ function App() {
 
   return (
     <>
-      <div className="view-switcher">
-        <div className="view-switcher-tabs">
-          <button
-            type="button"
-            className={view === "trainer" ? "view-switcher-active" : ""}
-            onClick={() => setView("trainer")}
-          >
-            {t.map.trainerNavLabel}
-          </button>
-          <button
-            type="button"
-            className={
-              "view-switcher-openings" + (view === "openings" ? " view-switcher-active" : "")
-            }
-            onClick={() => setView("openings")}
-          >
-            {t.map.openingsNavLabel}
-          </button>
-          <button
-            type="button"
-            className={view === "map" ? "view-switcher-active" : ""}
-            onClick={() => setView("map")}
-          >
-            {t.map.navLabel}
-          </button>
-          <LanguageToggle language={language} label={t.switchToLanguage} onToggle={toggleLanguage} />
+      {view !== "home" && (
+        <div className="view-switcher">
+          <div className="view-switcher-tabs">
+            <button type="button" onClick={() => setView("home")}>
+              <img
+                src={`${import.meta.env.BASE_URL}home-icon.png`}
+                alt=""
+                className="view-switcher-tab-icon"
+              />
+              {t.home.navLabel}
+            </button>
+            <button
+              type="button"
+              className={view === "trainer" ? "view-switcher-active" : ""}
+              onClick={() => setView("trainer")}
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}pawn-icon.png`}
+                alt=""
+                className="view-switcher-tab-icon"
+              />
+              {t.map.trainerNavLabel}
+            </button>
+            <button
+              type="button"
+              className={
+                "view-switcher-openings" + (view === "openings" ? " view-switcher-active" : "")
+              }
+              onClick={() => setView("openings")}
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}openings-icon.png`}
+                alt=""
+                className="view-switcher-tab-icon"
+              />
+              {t.map.openingsNavLabel}
+            </button>
+            <button
+              type="button"
+              className={view === "map" ? "view-switcher-active" : ""}
+              onClick={() => setView("map")}
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}skillmap-icon.png`}
+                alt=""
+                className="view-switcher-tab-icon"
+              />
+              {t.map.navLabel}
+            </button>
+          </div>
+          {view === "trainer" && (
+            <HowToUseBanner
+              text={t.howToUse}
+              dismissLabel={t.dismissGuide}
+              storageKey="chess-opening-trainer-guide-dismissed"
+              variant="inline"
+            />
+          )}
         </div>
-        {view === "trainer" && (
-          <HowToUseBanner
-            text={t.howToUse}
-            dismissLabel={t.dismissGuide}
-            storageKey="chess-opening-trainer-guide-dismissed"
-            variant="inline"
-          />
-        )}
-      </div>
+      )}
 
-      {view === "map" ? (
+      {view === "home" ? (
+        <HomeScreen
+          t={t}
+          language={language}
+          onSelectLanguage={setLanguage}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onStartTrainer={() => setView("trainer")}
+          onBrowseOpenings={() => setView("openings")}
+          onOpenSkillMap={() => setView("map")}
+        />
+      ) : view === "map" ? (
         <SkillMap openings={openings} progress={progress} t={t} onTrainLine={handleMapSelect} />
       ) : (
         <div className="app-shell" data-mobile-view={view}>

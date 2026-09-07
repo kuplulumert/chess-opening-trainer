@@ -9,6 +9,19 @@
   margin-bottom: 20px;
 }
 
+.skill-map-hero {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.skill-map-hero-icon {
+  width: 110px;
+  height: auto;
+  border-radius: 14px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
 .skill-map-header {
   display: flex;
   align-items: flex-start;

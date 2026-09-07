@@ -19,6 +19,16 @@ export interface FinderCopy {
   close: string;
 }
 
+export interface HomeCopy {
+  navLabel: string;
+  startTrainer: string;
+  startTrainerHint: string;
+  browseOpenings: string;
+  browseOpeningsHint: string;
+  skillMap: string;
+  skillMapHint: string;
+}
+
 export interface MapCopy {
   navLabel: string;
   trainerNavLabel: string;
@@ -72,7 +82,6 @@ export interface Dictionary {
 
   switchToLight: string;
   switchToDark: string;
-  switchToLanguage: string;
 
   howToUse: string;
   dismissGuide: string;
@@ -82,6 +91,7 @@ export interface Dictionary {
 
   finder: FinderCopy;
   map: MapCopy;
+  home: HomeCopy;
 }
 
 const en: Dictionary = {
@@ -117,7 +127,6 @@ const en: Dictionary = {
 
   switchToLight: "Switch to light mode",
   switchToDark: "Switch to dark mode",
-  switchToLanguage: "Türkçeye geç",
 
   howToUse:
     "Pick a line on the left, then choose White or Black — you can drill the same opening from either side. You always play the moves yourself: Study mode shows where to move, Practice mode makes you find it first.",
@@ -176,9 +185,9 @@ const en: Dictionary = {
   },
 
   map: {
-    navLabel: "🗺️ Skill Map",
-    trainerNavLabel: "♟️ Trainer",
-    openingsNavLabel: "📖 Openings",
+    navLabel: "Skill Map",
+    trainerNavLabel: "Trainer",
+    openingsNavLabel: "Openings",
     title: "Opening Skill Map",
     subtitle: "Every family is its own constellation. Complete a line to earn Bronze, then repeat it for Silver, Gold, and Diamond — the family's capstone tracks its weakest line.",
     howToUse:
@@ -193,6 +202,16 @@ const en: Dictionary = {
     nextMedalHint: (remaining, nextMedal) =>
       `${remaining} more completion${remaining > 1 ? "s" : ""} → ${nextMedal}`,
     maxMedalHint: "Top medal reached!",
+  },
+
+  home: {
+    navLabel: "Home",
+    startTrainer: "Start Trainer",
+    startTrainerHint: "Jump into your opening and drill it move by move.",
+    browseOpenings: "Browse Openings",
+    browseOpeningsHint: "Explore the full library and pick a line to study.",
+    skillMap: "Skill Map",
+    skillMapHint: "See your progress across every opening family.",
   },
 };
 
@@ -229,7 +248,6 @@ const tr: Dictionary = {
 
   switchToLight: "Açık temaya geç",
   switchToDark: "Koyu temaya geç",
-  switchToLanguage: "Switch to English",
 
   howToUse:
     "Soldan bir açılış seç, sonra Beyaz ya da Siyah tarafı seç — aynı açılışı iki taraftan da çalışabilirsin. Hamleleri her zaman sen oynarsın: Çalışma modunda nereye oynayacağın gösterilir, Pratik modunda önce kendin bulmaya çalışırsın.",
@@ -288,9 +306,9 @@ const tr: Dictionary = {
   },
 
   map: {
-    navLabel: "🗺️ Yetenek Haritası",
-    trainerNavLabel: "♟️ Antrenör",
-    openingsNavLabel: "📖 Açılışlar",
+    navLabel: "Yetenek Haritası",
+    trainerNavLabel: "Antrenör",
+    openingsNavLabel: "Açılışlar",
     title: "Açılış Yetenek Haritası",
     subtitle: "Her aile kendi takımyıldızı. Bir hattı tamamla, Bronz kazan; tekrar tekrar çalışarak Gümüş, Altın ve Elmas'a yüksel — ailenin kapanış madalyası en zayıf hattını yansıtır.",
     howToUse:
@@ -304,6 +322,16 @@ const tr: Dictionary = {
     completionsLabel: (n) => (n === 1 ? "Bir kez tamamlandı" : `${n} kez tamamlandı`),
     nextMedalHint: (remaining, nextMedal) => `${remaining} tekrar daha → ${nextMedal}`,
     maxMedalHint: "En üst madalyaya ulaşıldı!",
+  },
+
+  home: {
+    navLabel: "Ana Sayfa",
+    startTrainer: "Antrenöre Başla",
+    startTrainerHint: "Açılışına gir, hamle hamle çalış.",
+    browseOpenings: "Açılışlara Gözat",
+    browseOpeningsHint: "Tüm açılış kütüphanesine göz at, bir hat seç.",
+    skillMap: "Yetenek Haritası",
+    skillMapHint: "Tüm açılış ailelerindeki ilerlemeni gör.",
   },
 };
 
