@@ -186,6 +186,15 @@ function App() {
           />
           <main className="board-column">
             <BoardPanel
+              // Force a full remount on every new run (line, color, or mode
+              // change) rather than letting react-chessboard/dnd-kit update
+              // in place — its square-position measurements can go stale
+              // when the board's spot on the page shifts (a new opening
+              // name, White/Black cards appearing/disappearing), and a
+              // resize-event nudge wasn't enough to make it re-measure. A
+              // fresh mount always measures the current, already-settled
+              // layout from scratch.
+              key={runKey}
               fen={trainer.fen}
               playerColor={playerColor}
               isPlayerTurn={trainer.isPlayerTurn}
