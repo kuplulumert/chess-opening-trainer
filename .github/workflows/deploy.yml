@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/chess-opening-app-qeaomu, main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,13 @@ jobs:
 
       - run: npm run lint
 
+      # A project Pages site is served from /<repo>/, so the bundle's asset
+      # paths have to be built against that prefix. Taken from the repo name
+      # rather than hardcoded, so renaming the repository can't silently
+      # produce a site that loads a blank page.
       - run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
 
       # On the legacy "deploy from a branch" source, GitHub's own builder
       # publishes the unbuilt repository root and races this workflow on every
