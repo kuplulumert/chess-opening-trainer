@@ -16,6 +16,8 @@ import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/u
 import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
 import { useLanguage } from "./hooks/useLanguage";
+import { useReminders } from "./hooks/useReminders";
+import { syncReviewReminder } from "./utils/notifications";
 import "./App.css";
 
 function App() {
@@ -28,6 +30,7 @@ function App() {
   const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
   const { theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
+  const { remindersEnabled, enableReminders, disableReminders } = useReminders();
 
   const openings = useMemo(() => getLocalizedOpenings(language), [language]);
   const line = openings.find((o) => o.id === selectedId) ?? openings[0];
@@ -77,6 +80,18 @@ function App() {
     recordReview(line.id, playerColor, mistakeCount, hintUsedInRun);
     setProgress(getAllProgress());
   }, [isDone, mode, line.id, playerColor, mistakeCount, hintUsedInRun]);
+
+  // Re-derives the one pending "review due" notification from the latest
+  // progress every time it changes (a review just got recorded) and on
+  // first load (app launch) — see syncReviewReminder for why there's only
+  // ever at most one pending. No-op on web and while the trainee has
+  // reminders turned off.
+  useEffect(() => {
+    syncReviewReminder(remindersEnabled, progress, {
+      title: t.notifications.title,
+      body: t.notifications.body,
+    });
+  }, [remindersEnabled, progress, t]);
 
   // Every new run, and every return to the board from another tab, starts
   // at the top of the page. Partly UX — the board should be in view — but
@@ -226,6 +241,9 @@ function App() {
           onStartTrainer={() => setView("trainer")}
           onBrowseOpenings={() => setView("openings")}
           onOpenSkillMap={() => setView("map")}
+          remindersEnabled={remindersEnabled}
+          onEnableReminders={enableReminders}
+          onDisableReminders={disableReminders}
         />
       ) : view === "map" ? (
         <SkillMap

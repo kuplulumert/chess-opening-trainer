@@ -29,6 +29,16 @@ export interface HomeCopy {
   skillMapHint: string;
 }
 
+export interface NotificationsCopy {
+  toggleLabel: string;
+  on: string;
+  off: string;
+  permissionHint: string;
+  // The scheduled local notification's own text, not shown in-app.
+  title: string;
+  body: string;
+}
+
 export interface MapCopy {
   navLabel: string;
   trainerNavLabel: string;
@@ -99,6 +109,7 @@ export interface Dictionary {
   finder: FinderCopy;
   map: MapCopy;
   home: HomeCopy;
+  notifications: NotificationsCopy;
 }
 
 const en: Dictionary = {
@@ -228,6 +239,15 @@ const en: Dictionary = {
     skillMap: "Skill Map",
     skillMapHint: "See your progress across every opening family.",
   },
+
+  notifications: {
+    toggleLabel: "Review reminders",
+    on: "On",
+    off: "Off",
+    permissionHint: "If iOS denies the prompt, re-enable notifications for this app from Settings.",
+    title: "Opening Trainer",
+    body: "A line is ready for review — keep your streak going.",
+  },
 };
 
 const tr: Dictionary = {
@@ -355,6 +375,15 @@ const tr: Dictionary = {
     browseOpeningsHint: "Tüm açılış kütüphanesine göz at, bir hat seç.",
     skillMap: "Yetenek Haritası",
     skillMapHint: "Tüm açılış ailelerindeki ilerlemeni gör.",
+  },
+
+  notifications: {
+    toggleLabel: "Tekrar hatırlatıcıları",
+    on: "Açık",
+    off: "Kapalı",
+    permissionHint: "iOS izni reddederse bu uygulama için bildirimleri Ayarlar'dan tekrar açabilirsin.",
+    title: "Açılış Antrenörü",
+    body: "Bir hat tekrar için hazır — serini sürdür.",
   },
 };
 

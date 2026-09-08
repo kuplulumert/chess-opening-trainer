@@ -21,6 +21,9 @@ interface HomeScreenProps {
   onStartTrainer: () => void;
   onBrowseOpenings: () => void;
   onOpenSkillMap: () => void;
+  remindersEnabled: boolean;
+  onEnableReminders: () => void;
+  onDisableReminders: () => void;
 }
 
 export function HomeScreen({
@@ -33,6 +36,9 @@ export function HomeScreen({
   onStartTrainer,
   onBrowseOpenings,
   onOpenSkillMap,
+  remindersEnabled,
+  onEnableReminders,
+  onDisableReminders,
 }: HomeScreenProps) {
   const [intro] = useState(() => !introPlayed);
   useEffect(() => {
@@ -72,6 +78,32 @@ export function HomeScreen({
       <div className="home-actions">
         <div className="info-card home-language-card">
           <LanguagePicker language={language} onSelect={onSelectLanguage} />
+          {/* Native only: local notifications are a no-op on the web build,
+              so the control would just be a switch that does nothing. */}
+          {isNative && (
+            <>
+              <div className="control-row">
+                <span className="control-label">🔔 {t.notifications.toggleLabel}</span>
+                <div className="segmented">
+                  <button
+                    type="button"
+                    className={!remindersEnabled ? "segmented-active" : ""}
+                    onClick={onDisableReminders}
+                  >
+                    {t.notifications.off}
+                  </button>
+                  <button
+                    type="button"
+                    className={remindersEnabled ? "segmented-active" : ""}
+                    onClick={onEnableReminders}
+                  >
+                    {t.notifications.on}
+                  </button>
+                </div>
+              </div>
+              <p className="home-reminders-hint">{t.notifications.permissionHint}</p>
+            </>
+          )}
         </div>
         <button type="button" className="home-action-card" onClick={onStartTrainer}>
           <span className="home-action-title-row">

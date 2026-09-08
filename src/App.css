@@ -985,6 +985,14 @@ button + .segmented-active {
   margin-bottom: 0;
 }
 
+.home-reminders-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  text-align: left;
+  margin-top: 2px;
+}
+
 /* ---------- Home launch intro ---------- */
 
 /* Plays once per app session (HomeScreen adds .home-screen-intro on its
