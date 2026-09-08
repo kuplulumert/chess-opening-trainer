@@ -11,7 +11,7 @@ import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
 import { HomeScreen } from "./components/HomeScreen";
 import { TabBar } from "./components/TabBar";
-import { getAllProgress, recordCompletion } from "./utils/storage";
+import { getAllProgress, recordReview } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
 import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
@@ -59,9 +59,12 @@ function App() {
 
   const trainer = useOpeningTrainer(activeLine, playerColor, mode);
 
-  // Record a completion once per run-through of a line, not once per render.
+  // Record a completion once per run-through of a line, not once per
+  // render — and only in quiz mode, same as before: Study mode is guided,
+  // so it isn't a real recall test and shouldn't feed the SM-2 scheduler
+  // any more than it fed the old medal count.
   const recordedRef = useRef<string | null>(null);
-  const { isDone } = trainer;
+  const { isDone, mistakeCount, hintUsedInRun } = trainer;
   useEffect(() => {
     if (!isDone) {
       recordedRef.current = null;
@@ -71,9 +74,9 @@ function App() {
     const runKey = `${line.id}:${playerColor}`;
     if (recordedRef.current === runKey) return;
     recordedRef.current = runKey;
-    recordCompletion(line.id, playerColor);
+    recordReview(line.id, playerColor, mistakeCount, hintUsedInRun);
     setProgress(getAllProgress());
-  }, [isDone, mode, line.id, playerColor]);
+  }, [isDone, mode, line.id, playerColor, mistakeCount, hintUsedInRun]);
 
   // Every new run, and every return to the board from another tab, starts
   // at the top of the page. Partly UX — the board should be in view — but
@@ -146,6 +149,17 @@ function App() {
     [selectOpening],
   );
 
+  // A due-review pick names its own color explicitly (the side that was
+  // actually quizzed) rather than deferring to selectOpening's family
+  // default, and forces Quiz mode — landing in Study wouldn't test recall
+  // at all, so the review wouldn't feed the scheduler anything.
+  const handleReviewDue = useCallback((next: OpeningLine, color: PlayerColor) => {
+    setSelectedId(next.id);
+    setPlayerColor(color);
+    setMode("quiz");
+    setView("trainer");
+  }, []);
+
   return (
     <>
       {view !== "home" && (
@@ -214,7 +228,13 @@ function App() {
           onOpenSkillMap={() => setView("map")}
         />
       ) : view === "map" ? (
-        <SkillMap openings={openings} progress={progress} t={t} onTrainLine={handleMapSelect} />
+        <SkillMap
+          openings={openings}
+          progress={progress}
+          t={t}
+          onTrainLine={handleMapSelect}
+          onReviewDue={handleReviewDue}
+        />
       ) : (
         <div className="app-shell" data-mobile-view={view}>
           {view === "trainer" && (

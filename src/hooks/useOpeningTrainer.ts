@@ -44,6 +44,12 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     null,
   );
   const [hintRequested, setHintRequested] = useState(false);
+  // Run-scoped, unlike wrongAttempts/hintRequested above (which are
+  // per-move and reset on every applyBookMove): these accumulate across
+  // the whole line and only reset when the run itself restarts. They're
+  // what the SM-2 scheduler grades the run on — see qualityFromRun.
+  const [mistakeCount, setMistakeCount] = useState(0);
+  const [hintUsedInRun, setHintUsedInRun] = useState(false);
   const timeoutRef = useRef<number | undefined>(undefined);
 
   // Reset synchronously when the line, colour, or mode changes, rather than in an
@@ -59,6 +65,8 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     setWrongAttempts(0);
     setLastWrongSquares(null);
     setHintRequested(false);
+    setMistakeCount(0);
+    setHintUsedInRun(false);
   }
 
   const isDone = moveIndex >= line.moves.length;
@@ -91,6 +99,8 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     setWrongAttempts(0);
     setLastWrongSquares(null);
     setHintRequested(false);
+    setMistakeCount(0);
+    setHintUsedInRun(false);
   }, []);
 
   // Auto-play only the opponent's book moves — in both modes, the trainee
@@ -131,6 +141,7 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
         hapticError();
         setLastWrongSquares({ from, to });
         setWrongAttempts((n) => n + 1);
+        setMistakeCount((n) => n + 1);
         window.setTimeout(() => setFeedback("idle"), 500);
       }
       return true;
@@ -160,12 +171,15 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
   }, [moveIndex, playerColor, line.moves]);
 
   // Plays the next book move outright, whoever's turn it is — during the
-  // opponent's reply delay this just skips the wait.
+  // opponent's reply delay this just skips the wait. Used on the trainee's
+  // own turn, though, it's the same as being handed the answer: counts
+  // against this run's SM-2 quality the same way a hint does.
   const stepForward = useCallback(() => {
     if (isDone) return;
+    if (isPlayerTurn) setHintUsedInRun(true);
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     applyBookMove(moveIndex);
-  }, [isDone, moveIndex, applyBookMove]);
+  }, [isDone, isPlayerTurn, moveIndex, applyBookMove]);
 
   // Jump to the position after the first `plies` moves — the move strip in
   // the info panel uses this. Landing on the opponent's turn is fine: the
@@ -209,7 +223,12 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     blackStrategy: lastStrategyForColor(line.strategy, moveIndex, "b"),
     totalMoves: line.moves.length,
     attemptMove,
-    requestHint: () => setHintRequested(true),
+    requestHint: () => {
+      setHintRequested(true);
+      setHintUsedInRun(true);
+    },
+    mistakeCount,
+    hintUsedInRun,
     reset,
     canStepBack,
     canStepForward,

@@ -4,8 +4,10 @@ import {
   computeRank,
   MEDAL_KEYS,
 } from "../data/skillMap";
+import { getDueLines } from "../data/dueLines";
 import type { OpeningLine } from "../data/openings";
 import type { LineProgress } from "../utils/storage";
+import type { PlayerColor } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { HowToUseBanner } from "./HowToUseBanner";
 import "./SkillMap.css";
@@ -15,6 +17,9 @@ interface SkillMapProps {
   progress: Record<string, LineProgress>;
   t: Dictionary;
   onTrainLine: (line: OpeningLine) => void;
+  /** A due-review pick carries its own color — the side that was actually
+   *  quizzed, which onTrainLine's family-default assignment might not match. */
+  onReviewDue: (line: OpeningLine, color: PlayerColor) => void;
 }
 
 function nodeTitle(t: Dictionary, completions: number, medalTier: number): string {
@@ -25,10 +30,11 @@ function nodeTitle(t: Dictionary, completions: number, medalTier: number): strin
   return `${medalName} · ${t.map.completionsLabel(completions)} · ${hint}`;
 }
 
-export function SkillMap({ openings, progress, t, onTrainLine }: SkillMapProps) {
+export function SkillMap({ openings, progress, t, onTrainLine, onReviewDue }: SkillMapProps) {
   const familyMap = buildFamilyMap(openings, progress);
   const { points, total, tier } = computeRank(familyMap);
   const rankTitle = t.map.rankTitles[tier];
+  const dueLines = getDueLines(openings, progress);
 
   return (
     <div className="skill-map">
@@ -45,6 +51,28 @@ export function SkillMap({ openings, progress, t, onTrainLine }: SkillMapProps) 
         dismissLabel={t.dismissGuide}
         storageKey="chess-opening-trainer-map-guide-dismissed"
       />
+
+      {dueLines.length > 0 && (
+        <div className="due-review">
+          <h2 className="due-review-title">{t.map.dueTitle}</h2>
+          <p className="due-review-subtitle">{t.map.dueSubtitle(dueLines.length)}</p>
+          <div className="due-review-list">
+            {dueLines.map(({ line, color, daysOverdue }) => (
+              <button
+                key={`${line.id}:${color}`}
+                type="button"
+                className="due-review-item"
+                onClick={() => onReviewDue(line, color)}
+              >
+                <span className="due-review-eco">{line.eco}</span>
+                <span className="due-review-name">{line.name}</span>
+                <span className="due-review-side">{color === "w" ? t.white : t.black}</span>
+                <span className="due-review-days">{t.map.dueDaysLabel(daysOverdue)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="skill-map-header">
         <div>

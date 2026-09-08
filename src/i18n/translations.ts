@@ -47,6 +47,12 @@ export interface MapCopy {
   completionsLabel: (n: number) => string;
   nextMedalHint: (remaining: number, nextMedal: string) => string;
   maxMedalHint: string;
+
+  // A due line's spaced-repetition state — separate from the medal/rank
+  // copy above, which only ever counts total completions.
+  dueTitle: string;
+  dueSubtitle: (n: number) => string;
+  dueDaysLabel: (daysOverdue: number) => string;
 }
 
 export interface Dictionary {
@@ -204,6 +210,13 @@ const en: Dictionary = {
     nextMedalHint: (remaining, nextMedal) =>
       `${remaining} more completion${remaining > 1 ? "s" : ""} → ${nextMedal}`,
     maxMedalHint: "Top medal reached!",
+
+    dueTitle: "Review due",
+    dueSubtitle: (n) => (n === 1 ? "1 line is ready to review" : `${n} lines are ready to review`),
+    dueDaysLabel: (daysOverdue) => {
+      if (daysOverdue <= 0) return "Due today";
+      return daysOverdue === 1 ? "1 day overdue" : `${daysOverdue} days overdue`;
+    },
   },
 
   home: {
@@ -325,6 +338,13 @@ const tr: Dictionary = {
     completionsLabel: (n) => (n === 1 ? "Bir kez tamamlandı" : `${n} kez tamamlandı`),
     nextMedalHint: (remaining, nextMedal) => `${remaining} tekrar daha → ${nextMedal}`,
     maxMedalHint: "En üst madalyaya ulaşıldı!",
+
+    dueTitle: "Tekrar zamanı",
+    dueSubtitle: (n) => (n === 1 ? "1 hat tekrar için hazır" : `${n} hat tekrar için hazır`),
+    dueDaysLabel: (daysOverdue) => {
+      if (daysOverdue <= 0) return "Bugün";
+      return daysOverdue === 1 ? "1 gün gecikti" : `${daysOverdue} gün gecikti`;
+    },
   },
 
   home: {
