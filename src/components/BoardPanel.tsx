@@ -31,6 +31,8 @@ interface BoardPanelProps {
   onHint: () => void;
   /** Rendered under the toolbar, inside the board's own column. */
   children?: React.ReactNode;
+  /** Laid over the board itself — Adım Adım's between-runs card. */
+  boardOverlay?: React.ReactNode;
 }
 
 function findMoveSquares(fen: string, san: string): { from: Square; to: Square } | null {
@@ -61,6 +63,7 @@ export function BoardPanel({
   onRestart,
   onHint,
   children,
+  boardOverlay,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
 
@@ -227,6 +230,7 @@ export function BoardPanel({
             lightSquareStyle: { backgroundColor: "#eef1f5" },
           }}
         />
+        {boardOverlay}
       </div>
       {/* Directly under the board, where a thumb naturally rests on a
           phone — the top-right corner above the board was the furthest

@@ -21,9 +21,15 @@
   color: var(--text-h);
 }
 
-.step-progress-rule {
-  font-size: 11px;
-  color: var(--text-muted);
+/* Which run this is, named every moment of it — so starting over at move one
+   reads as "rep 2", not as the board glitching. */
+.step-progress-run {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
 .step-progress-pips {

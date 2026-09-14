@@ -493,6 +493,12 @@
   -webkit-user-drag: none;
 }
 
+/* Positioning context for the Adım Adım between-runs card, which lies over
+   the board itself (see StepBeat). */
+.board-wrap {
+  position: relative;
+}
+
 .board-shake {
   animation: shake 0.32s;
 }

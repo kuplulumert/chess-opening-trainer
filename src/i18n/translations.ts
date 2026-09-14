@@ -39,16 +39,36 @@ export interface StepsCopy {
   title: string;
   stageLabel: (stage: number, total: number) => string;
   finishedLabel: string;
-  rule: (runs: number) => string;
+  // Which run is in progress, always on screen: "Rep 2 of 3" and so on.
+  repLabel: (rep: number, total: number) => string;
+  introRunLabel: string;
+  hintRunLabel: string;
   shownRunLabel: string;
-  introStatus: string;
+  introStatus: (runs: number) => string;
   hintStatus: string;
-  recallStatus: (streak: number, runs: number) => string;
+  recallStatus: (runs: number) => string;
   mistakeStatus: string;
   cleanFlash: (streak: number, runs: number) => string;
   uncountedFlash: string;
   failedFlash: string;
   stagePassedFlash: string;
+  // The card over the board between runs.
+  beatIntroDone: string;
+  beatHintDone: string;
+  beatClean: (rep: number, total: number) => string;
+  beatFailed: string;
+  beatFailedDetail: string;
+  beatStagePassed: (stage: number) => string;
+  beatFinished: (learnedNow: boolean) => string;
+  beatFinishedDetail: (learnedNow: boolean) => string;
+  beatNext: (label: string) => string;
+  beatNextStage: (stage: number, moves: number) => string;
+  beatTap: string;
+  // The card over the board the first time a line opens in the mode.
+  welcomeTitle: string;
+  welcomeBody: (stages: number) => string;
+  welcomeSteps: (runs: number) => [string, string, string];
+  welcomeStart: string;
   learned: string;
   refreshed: string;
   toPractice: string;
@@ -266,16 +286,40 @@ const en: Dictionary = {
     title: "Step by step progress",
     stageLabel: (stage, total) => `Stage ${stage} of ${total}`,
     finishedLabel: "All stages done",
-    rule: (runs) => `1 intro + ${runs} clean runs`,
+    repLabel: (rep, total) => `Rep ${rep} of ${total}`,
+    introRunLabel: "Intro run",
+    hintRunLabel: "Hint run",
     shownRunLabel: "This run shows moves and doesn't count",
-    introStatus: "New moves are shown on the board. This run doesn't count.",
+    introStatus: (runs) =>
+      `New moves are shown on the board. Then you'll replay the line from the start ${runs} times from memory.`,
     hintStatus: "The move you missed is shown. This run doesn't count.",
-    recallStatus: (streak, runs) => `No hints now — ${runs} clean runs in a row (${streak}/${runs}).`,
-    mistakeStatus: "Mistake — streak reset. This run won't count.",
-    cleanFlash: (streak, runs) => `Clean run — ${streak}/${runs}.`,
-    uncountedFlash: "Done. The next run counts.",
-    failedFlash: "That run had a mistake — the missed move will be shown.",
+    recallStatus: (runs) => `No hints — ${runs} error-free reps in a row pass the stage.`,
+    mistakeStatus: "Mistake — streak reset. This rep won't count.",
+    cleanFlash: (streak, runs) => `Error-free rep — ${streak}/${runs}.`,
+    uncountedFlash: "Done. The next rep counts.",
+    failedFlash: "That rep had a mistake — the missed move will be shown.",
     stagePassedFlash: "Stage passed — the next moves are coming up.",
+    beatIntroDone: "Intro done",
+    beatHintDone: "Hint run done",
+    beatClean: (rep, total) => `Error-free rep — ${rep}/${total}`,
+    beatFailed: "That rep had a mistake",
+    beatFailedDetail: "Streak reset — the move you missed will be shown",
+    beatStagePassed: (stage) => `Stage ${stage} done!`,
+    beatFinished: (learnedNow) => (learnedNow ? "Line learned!" : "Line refreshed"),
+    beatFinishedDetail: (learnedNow) =>
+      learnedNow ? "It's in your review queue — first review tomorrow" : "Your review schedule hasn't changed",
+    beatNext: (label) => `Next: ${label} · from the start`,
+    beatNextStage: (stage, moves) => `Stage ${stage}: ${moves} new move${moves === 1 ? "" : "s"}`,
+    beatTap: "Tap to continue",
+    welcomeTitle: "Learn it step by step",
+    welcomeBody: (stages) =>
+      `This line is split into ${stages} stages. Each stage is a 3-move chunk: your move, the reply, your move.`,
+    welcomeSteps: (runs) => [
+      "First, the new moves are shown on the board.",
+      `Then you replay the line from the start ${runs} times without a mistake.`,
+      "A mistake resets the streak and shows the missed move again.",
+    ],
+    welcomeStart: "Start",
     learned: "Line learned — it's in your review queue, first review tomorrow.",
     refreshed: "Line refreshed. Your review schedule hasn't changed.",
     toPractice: "Go to Practice",
@@ -418,16 +462,40 @@ const tr: Dictionary = {
     title: "Adım adım ilerleme",
     stageLabel: (stage, total) => `Aşama ${stage} / ${total}`,
     finishedLabel: "Tüm aşamalar tamam",
-    rule: (runs) => `1 tanıtım + ${runs} temiz tur`,
+    repLabel: (rep, total) => `Tekrar ${rep} / ${total}`,
+    introRunLabel: "Tanıtım turu",
+    hintRunLabel: "İpuçlu tur",
     shownRunLabel: "Bu turda hamleler gösteriliyor, sayılmaz",
-    introStatus: "Yeni hamleler tahtada gösteriliyor. Bu tur sayılmaz.",
+    introStatus: (runs) =>
+      `Yeni hamleler tahtada gösteriliyor. Sonra hattı baştan ${runs} kez ezberden tekrar edeceksin.`,
     hintStatus: "Kaçırdığın hamle gösteriliyor. Bu tur sayılmaz.",
-    recallStatus: (streak, runs) => `Artık ipucu yok — üst üste ${runs} temiz tur (${streak}/${runs}).`,
-    mistakeStatus: "Hata — seri sıfırlandı, bu tur sayılmayacak.",
-    cleanFlash: (streak, runs) => `Temiz tur — ${streak}/${runs}.`,
-    uncountedFlash: "Tamam. Sıradaki tur sayılır.",
-    failedFlash: "Bu turda hata vardı — kaçırdığın hamle gösterilecek.",
+    recallStatus: (runs) => `İpucu yok — üst üste ${runs} hatasız tekrar aşamayı geçirir.`,
+    mistakeStatus: "Hata — seri sıfırlandı, bu tekrar sayılmayacak.",
+    cleanFlash: (streak, runs) => `Hatasız tekrar — ${streak}/${runs}.`,
+    uncountedFlash: "Tamam. Sıradaki tekrar sayılır.",
+    failedFlash: "Bu tekrarda hata vardı — kaçırdığın hamle gösterilecek.",
     stagePassedFlash: "Aşama geçildi — sıradaki hamleler geliyor.",
+    beatIntroDone: "Tanıtım bitti",
+    beatHintDone: "İpuçlu tur bitti",
+    beatClean: (rep, total) => `Hatasız tekrar — ${rep}/${total}`,
+    beatFailed: "Bu tekrarda hata vardı",
+    beatFailedDetail: "Seri sıfırlandı — kaçırdığın hamle gösterilecek",
+    beatStagePassed: (stage) => `Aşama ${stage} tamam!`,
+    beatFinished: (learnedNow) => (learnedNow ? "Hat öğrenildi!" : "Hat tazelendi"),
+    beatFinishedDetail: (learnedNow) =>
+      learnedNow ? "Tekrar kuyruğuna girdi — ilk tekrar yarın" : "Tekrar takvimin değişmedi",
+    beatNext: (label) => `Sıradaki: ${label} · baştan`,
+    beatNextStage: (stage, moves) => `Aşama ${stage}: ${moves} yeni hamle`,
+    beatTap: "Devam için dokun",
+    welcomeTitle: "Adım adım öğrenme",
+    welcomeBody: (stages) =>
+      `Bu hat ${stages} aşamaya bölündü. Her aşama 3 hamlelik bir parça: senin hamlen, rakibin cevabı, senin hamlen.`,
+    welcomeSteps: (runs) => [
+      "Önce yeni hamleler tahtada gösterilir.",
+      `Sonra hattı baştan ${runs} kez hatasız tekrar edersin.`,
+      "Hata yaparsan seri sıfırlanır ve kaçırdığın hamle yeniden gösterilir.",
+    ],
+    welcomeStart: "Başla",
     learned: "Hat öğrenildi — tekrar kuyruğuna girdi, ilk tekrar yarın.",
     refreshed: "Hat tazelendi. Tekrar takvimin değişmedi.",
     toPractice: "Pratik'e geç",

@@ -1,0 +1,83 @@
+/* Shares the between-runs card's look (StepBeat.css): same backdrop, same
+   card, so the two read as one voice. */
+.step-welcome {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(10, 12, 16, 0.5);
+  animation: step-beat-fade 160ms ease-out both;
+}
+
+/* A phone board is only ~335px tall, so this stays compact — and scrolls
+   inside itself rather than getting cut off if it ever doesn't fit. */
+.step-welcome-card {
+  gap: 8px;
+  max-width: 94%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px 14px 12px;
+}
+
+.step-welcome-card h3 {
+  margin: 0;
+}
+
+.step-welcome-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.step-welcome-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.step-welcome-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-h);
+}
+
+.step-welcome-step-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.step-welcome-start {
+  align-self: stretch;
+  margin-top: 2px;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--panel-bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-welcome {
+    animation: none;
+  }
+}

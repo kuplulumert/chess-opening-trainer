@@ -18,13 +18,21 @@ import { useTheme } from "./hooks/useTheme";
 import { useLanguage } from "./hooks/useLanguage";
 import { useReminders } from "./hooks/useReminders";
 import { syncReviewReminder } from "./utils/notifications";
-import { CLEAN_RUNS_TO_PASS, useStepSession, type StepSessionState } from "./hooks/useStepSession";
+import {
+  CLEAN_RUNS_TO_PASS,
+  useStepSession,
+  type StepPhase,
+  type StepSessionState,
+} from "./hooks/useStepSession";
 import { StepProgress } from "./components/StepProgress";
+import { StepBeat } from "./components/StepBeat";
+import { StepWelcome } from "./components/StepWelcome";
 import "./App.css";
 
-// How long a finished Adım Adım run stays on its final position, with its
-// result showing, before the next run starts over from move one.
-const STEP_RUN_PAUSE_MS = 900;
+// How long a finished Adım Adım run stays on its final position, under the
+// between-runs card, before the next run starts over from move one. Long
+// enough to read the card; tapping it skips the rest.
+const STEP_RUN_PAUSE_MS = 1600;
 
 interface PendingStep {
   next: StepSessionState;
@@ -44,6 +52,9 @@ function App() {
   const [progress, setProgress] = useState(() => getAllProgress());
   const [extended, setExtended] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
+  // Line+side keys whose Adım Adım welcome card has been dismissed this
+  // session, so moving between lines doesn't bring it back each time.
+  const [welcomeSeen, setWelcomeSeen] = useState<ReadonlySet<string>>(() => new Set());
   const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
   const { theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
@@ -298,6 +309,14 @@ function App() {
 
   const handleGoToPractice = useCallback(() => setMode("quiz"), []);
 
+  // Starts over from move one on the way out: a Black line's opening move
+  // then plays where the trainee can see it, not under the welcome card.
+  const handleStartSteps = useCallback(() => {
+    const key = `${line.id}:${playerColor}`;
+    setWelcomeSeen((prev) => new Set(prev).add(key));
+    trainer.reset();
+  }, [line.id, playerColor, trainer]);
+
   // Same as picking from the list or the map: the point of choosing a line
   // is to go train it. Closing the finder without switching views dropped
   // the trainee back on whatever screen they opened it from — on Home that
@@ -360,12 +379,67 @@ function App() {
     ? ""
     : (beatFlash?.text ??
       (steps.phase === "intro"
-        ? t.steps.introStatus
+        ? t.steps.introStatus(CLEAN_RUNS_TO_PASS)
         : steps.phase === "hint"
           ? t.steps.hintStatus
           : liveMistake
             ? t.steps.mistakeStatus
-            : t.steps.recallStatus(steps.streak, CLEAN_RUNS_TO_PASS)));
+            : t.steps.recallStatus(CLEAN_RUNS_TO_PASS)));
+
+  // The run in progress, named on screen at every moment — the difference
+  // between "rep 2 of 3" and the board inexplicably starting over.
+  const runLabelFor = (phase: StepPhase, streak: number) =>
+    phase === "intro"
+      ? t.steps.introRunLabel
+      : phase === "hint"
+        ? t.steps.hintRunLabel
+        : t.steps.repLabel(streak + 1, CLEAN_RUNS_TO_PASS);
+  const stepRunLabel = steps.finished ? "" : runLabelFor(steps.phase, steps.streak);
+
+  // A line+side opened in Adım Adım with no record at all yet gets the rules
+  // first, over the board, before anything is played (see StepWelcome).
+  // Resuming at a later stage, or refreshing a learned line, skips it.
+  const showStepWelcome =
+    mode === "steps" &&
+    !lineProgress &&
+    steps.stage === 0 &&
+    !steps.finished &&
+    !welcomeSeen.has(`${line.id}:${playerColor}`);
+
+  // What the card over the board says during the beat. `lineLearned` still
+  // reads the pre-run state here: the finished run's record is in storage,
+  // but progress state only catches up when the beat ends.
+  const stepBeat = !beat
+    ? null
+    : beat.outcome === "finished"
+      ? {
+          tone: "done" as const,
+          title: t.steps.beatFinished(!lineLearned),
+          detail: t.steps.beatFinishedDetail(!lineLearned),
+        }
+      : beat.outcome === "stagePassed"
+        ? {
+            tone: "done" as const,
+            title: t.steps.beatStagePassed(steps.stage + 1),
+            next: t.steps.beatNextStage(beat.next.stage + 1, beat.next.shown.length),
+          }
+        : beat.outcome === "failed"
+          ? {
+              tone: "warn" as const,
+              title: t.steps.beatFailed,
+              detail: t.steps.beatFailedDetail,
+              next: t.steps.beatNext(runLabelFor(beat.next.phase, beat.next.streak)),
+            }
+          : {
+              tone: "good" as const,
+              title:
+                beat.outcome === "clean"
+                  ? t.steps.beatClean(beat.next.streak, CLEAN_RUNS_TO_PASS)
+                  : steps.phase === "hint"
+                    ? t.steps.beatHintDone
+                    : t.steps.beatIntroDone,
+              next: t.steps.beatNext(runLabelFor(beat.next.phase, beat.next.streak)),
+            };
 
   return (
     <>
@@ -493,6 +567,26 @@ function App() {
               hintVisible={mode !== "study"}
               canHint={!trainer.isDone}
               onHint={trainer.requestHint}
+              boardOverlay={
+                showStepWelcome ? (
+                  <StepWelcome
+                    title={t.steps.welcomeTitle}
+                    body={t.steps.welcomeBody(steps.stageCount)}
+                    steps={t.steps.welcomeSteps(CLEAN_RUNS_TO_PASS)}
+                    startLabel={t.steps.welcomeStart}
+                    onStart={handleStartSteps}
+                  />
+                ) : (
+                  stepBeat && (
+                    <StepBeat
+                      {...stepBeat}
+                      tapHint={t.steps.beatTap}
+                      durationMs={STEP_RUN_PAUSE_MS}
+                      onSkip={flushPendingStep}
+                    />
+                  )
+                )
+              }
             >
               {mode === "steps" && (
                 <StepProgress
@@ -501,6 +595,7 @@ function App() {
                   showsMoves={!steps.finished && steps.phase !== "recall"}
                   cleanRuns={shownStreak}
                   runsToPass={CLEAN_RUNS_TO_PASS}
+                  runLabel={stepRunLabel}
                   finished={steps.finished}
                   status={stepStatus}
                   t={t}

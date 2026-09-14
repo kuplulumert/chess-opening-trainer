@@ -9,6 +9,8 @@ interface StepProgressProps {
   showsMoves: boolean;
   cleanRuns: number;
   runsToPass: number;
+  /** The run in progress — "Intro run", "Rep 2 of 3" … — empty once finished. */
+  runLabel: string;
   finished: boolean;
   status: string;
   t: Dictionary;
@@ -24,6 +26,7 @@ export function StepProgress({
   showsMoves,
   cleanRuns,
   runsToPass,
+  runLabel,
   finished,
   status,
   t,
@@ -34,7 +37,7 @@ export function StepProgress({
         <span className="step-progress-stage">
           {finished ? t.steps.finishedLabel : t.steps.stageLabel(stage + 1, stageCount)}
         </span>
-        <span className="step-progress-rule">{t.steps.rule(runsToPass)}</span>
+        {runLabel && <span className="step-progress-run">{runLabel}</span>}
       </div>
       <div
         className="step-progress-pips"
