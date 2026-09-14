@@ -161,7 +161,8 @@
   gap: 6px;
 }
 
-.theme-toggle {
+.theme-toggle,
+.icon-toggle {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -175,10 +176,19 @@
 }
 
 @media (hover: hover) {
-  .theme-toggle:hover {
+  .theme-toggle:hover,
+  .icon-toggle:hover {
     border-color: var(--accent);
     color: var(--accent);
   }
+}
+
+/* An icon-only toggle has no label to say which way it's set, so the "on"
+   state has to be readable from the button itself. */
+.icon-toggle-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
 .finder-trigger {
@@ -386,6 +396,45 @@
 .mini-toggle button.mini-toggle-active {
   color: var(--accent);
   font-weight: 700;
+}
+
+/* The mode picker: a text label with a chevron, and the native <select>
+   stretched invisibly over it (see BoardPanel for why). */
+.mini-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mini-select::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-top: -3px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.mini-select-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mini-select:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .board-toolbar {
@@ -862,13 +911,38 @@ button + .segmented-active {
   text-align: center;
 }
 
-/* A small, label-less corner control — deliberately not a labeled row like
-   the Language card, per direct feedback that it shouldn't get "its own
-   bar". */
-.home-theme-toggle {
+/* Small, label-less corner controls (theme, review reminders) —
+   deliberately not labeled rows like the Language card, per direct feedback
+   that they shouldn't each get "their own bar" and crowd out the actual
+   actions on Home. */
+/* Only on screen after the OS refuses the reminder permission, then it
+   fades itself out. Sits under the corner controls rather than in the
+   card stack, so nothing is added to Home in the normal case. */
+.home-reminder-blocked {
+  position: absolute;
+  top: calc(max(16px, env(safe-area-inset-top)) + 38px);
+  right: max(16px, env(safe-area-inset-right));
+  max-width: 15rem;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  box-shadow: var(--shadow);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.4;
+  text-align: left;
+  z-index: 5;
+  animation: intro-rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.home-corner-controls {
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
   right: max(16px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .home-hero {
@@ -985,21 +1059,13 @@ button + .segmented-active {
   margin-bottom: 0;
 }
 
-.home-reminders-hint {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  text-align: left;
-  margin-top: 2px;
-}
-
 /* ---------- Home launch intro ---------- */
 
 /* Plays once per app session (HomeScreen adds .home-screen-intro on its
    first mount only). Deliberately no bounce or overshoot — an expo-out
    settle reads as "premium"; springy easing reads as a toy. Sequence:
-   logo blooms in with its halo → title → tagline → the four cards, 80ms
-   apart → theme toggle; the tab bar slides up last (see .tab-bar). */
+   logo blooms in with its halo → title → tagline → the three cards, 80ms
+   apart → corner controls; the tab bar slides up last (see .tab-bar). */
 @keyframes intro-logo {
   from {
     opacity: 0;
@@ -1071,11 +1137,7 @@ button + .segmented-active {
   animation-delay: 600ms;
 }
 
-.home-screen-intro .home-actions > :nth-child(4) {
-  animation-delay: 680ms;
-}
-
-.home-screen-intro .home-theme-toggle {
+.home-screen-intro .home-corner-controls {
   animation: intro-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 820ms both;
 }
 
@@ -1085,7 +1147,7 @@ button + .segmented-active {
   .home-screen-intro .home-title,
   .home-screen-intro .home-subtitle,
   .home-screen-intro .home-actions > *,
-  .home-screen-intro .home-theme-toggle {
+  .home-screen-intro .home-corner-controls {
     animation: none;
   }
 }

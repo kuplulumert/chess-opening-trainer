@@ -1,0 +1,99 @@
+.step-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-bg);
+}
+
+.step-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.step-progress-stage {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.step-progress-rule {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.step-progress-pips {
+  display: grid;
+  gap: 4px;
+}
+
+.step-pip {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.step-pip-done {
+  background: var(--success);
+}
+
+/* Outlined, not filled: this palette's accent and success are the same
+   green, so a solid "current" bar looked exactly like a finished one. The
+   same outline-means-in-progress look as the eye marker below. */
+.step-pip-current {
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Tall enough for a two-line status, so a short and a long message don't
+   make the panel underneath jump between runs. */
+.step-progress-runs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+}
+
+.step-shown {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+}
+
+.step-shown-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+}
+
+.step-dot-on {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.step-progress-status {
+  flex: 1;
+  min-width: 0;
+  margin: 0 0 0 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}

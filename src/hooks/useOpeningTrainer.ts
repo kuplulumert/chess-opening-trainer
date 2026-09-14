@@ -5,7 +5,10 @@ import { hapticError, hapticMove, hapticSuccess } from "../utils/native";
 import { playMoveSound } from "../utils/sound";
 
 export type PlayerColor = "w" | "b";
-export type TrainerMode = "quiz" | "study";
+// "steps" is Adım Adım: Practice rules, except that the plies passed in as
+// `shownPlies` get their move shown the way Study shows every move — see
+// useStepSession for which ones and why.
+export type TrainerMode = "quiz" | "study" | "steps";
 export type MoveFeedback = "idle" | "correct" | "wrong";
 
 const OPPONENT_MOVE_DELAY_MS = 550;
@@ -35,7 +38,12 @@ function lastStrategyForColor(
   return targetPly >= 0 ? strategy[targetPly] : null;
 }
 
-export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, mode: TrainerMode) {
+export function useOpeningTrainer(
+  line: OpeningLine,
+  playerColor: PlayerColor,
+  mode: TrainerMode,
+  shownPlies?: ReadonlySet<number>,
+) {
   const [game, setGame] = useState(() => new Chess());
   const [moveIndex, setMoveIndex] = useState(0);
   const [feedback, setFeedback] = useState<MoveFeedback>("idle");
@@ -50,7 +58,14 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
   // what the SM-2 scheduler grades the run on — see qualityFromRun.
   const [mistakeCount, setMistakeCount] = useState(0);
   const [hintUsedInRun, setHintUsedInRun] = useState(false);
+  // Which of the trainee's plies went wrong this run — a wrong move, a hint,
+  // or being handed the move. Adım Adım shows exactly these on the next run.
+  const [missedPlies, setMissedPlies] = useState<number[]>([]);
   const timeoutRef = useRef<number | undefined>(undefined);
+
+  const markMissed = useCallback((ply: number) => {
+    setMissedPlies((prev) => (prev.includes(ply) ? prev : [...prev, ply]));
+  }, []);
 
   // Reset synchronously when the line, colour, or mode changes, rather than in an
   // effect: an effect resets one render too late, so consumers would briefly still
@@ -67,6 +82,7 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     setHintRequested(false);
     setMistakeCount(0);
     setHintUsedInRun(false);
+    setMissedPlies([]);
   }
 
   const isDone = moveIndex >= line.moves.length;
@@ -101,6 +117,7 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     setHintRequested(false);
     setMistakeCount(0);
     setHintUsedInRun(false);
+    setMissedPlies([]);
   }, []);
 
   // Auto-play only the opponent's book moves — in both modes, the trainee
@@ -142,11 +159,12 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
         setLastWrongSquares({ from, to });
         setWrongAttempts((n) => n + 1);
         setMistakeCount((n) => n + 1);
+        markMissed(moveIndex);
         window.setTimeout(() => setFeedback("idle"), 500);
       }
       return true;
     },
-    [game, isPlayerTurn, line.moves, moveIndex, applyBookMove],
+    [game, isPlayerTurn, line.moves, moveIndex, applyBookMove, markMissed],
   );
 
   // Stepping back rewinds to the trainee's *previous turn*, not just one
@@ -176,10 +194,13 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
   // against this run's SM-2 quality the same way a hint does.
   const stepForward = useCallback(() => {
     if (isDone) return;
-    if (isPlayerTurn) setHintUsedInRun(true);
+    if (isPlayerTurn) {
+      setHintUsedInRun(true);
+      markMissed(moveIndex);
+    }
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     applyBookMove(moveIndex);
-  }, [isDone, isPlayerTurn, moveIndex, applyBookMove]);
+  }, [isDone, isPlayerTurn, moveIndex, applyBookMove, markMissed]);
 
   // Jump to the position after the first `plies` moves — the move strip in
   // the info panel uses this. Landing on the opponent's turn is fine: the
@@ -199,7 +220,11 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     [line.moves],
   );
 
-  const showHint = mode === "study" || hintRequested || wrongAttempts >= WRONG_ATTEMPTS_BEFORE_HINT;
+  const showHint =
+    mode === "study" ||
+    (shownPlies?.has(moveIndex) ?? false) ||
+    hintRequested ||
+    wrongAttempts >= WRONG_ATTEMPTS_BEFORE_HINT;
   const revealedHint = showHint && !isDone ? line.moves[moveIndex] : null;
 
   // Derived from moveIndex rather than game.history(): chess.js loses move history
@@ -226,9 +251,11 @@ export function useOpeningTrainer(line: OpeningLine, playerColor: PlayerColor, m
     requestHint: () => {
       setHintRequested(true);
       setHintUsedInRun(true);
+      if (isPlayerTurn) markMissed(moveIndex);
     },
     mistakeCount,
     hintUsedInRun,
+    missedPlies,
     reset,
     canStepBack,
     canStepForward,

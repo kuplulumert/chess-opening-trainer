@@ -12,10 +12,16 @@ interface InfoPanelProps {
   canExtend: boolean;
   whiteStrategy: string | null;
   blackStrategy: string | null;
+  /** Adım Adım: every stage passed. Each of its runs ends "done" on its own,
+   *  so `isDone` alone would flash the finish card after every run. */
+  stepsFinished: boolean;
+  /** Whether that finish just taught the line, or refreshed a learned one. */
+  stepsLearnedNow: boolean;
   t: Dictionary;
   onRestart: () => void;
   onNextLine: () => void;
   onExtend: () => void;
+  onGoToPractice: () => void;
 }
 
 // Hidden per request — kept in place (component and props untouched) in
@@ -36,20 +42,25 @@ export function InfoPanel({
   canExtend,
   whiteStrategy,
   blackStrategy,
+  stepsFinished,
+  stepsLearnedNow,
   t,
   onRestart,
   onNextLine,
   onExtend,
+  onGoToPractice,
 }: InfoPanelProps) {
+  const showFinishCard = mode === "steps" ? stepsFinished : isDone;
+
   // Finishing a line adds a third card to a panel sized for two, so the
   // "what next" buttons start out below the fold. Bring them into view
   // rather than making the trainee find them.
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (!isDone) return;
+    if (!showFinishCard) return;
     const panel = panelRef.current;
     if (panel) panel.scrollTo({ top: panel.scrollHeight, behavior: "smooth" });
-  }, [isDone]);
+  }, [showFinishCard]);
 
   return (
     <aside className="info-panel" ref={panelRef}>
@@ -75,27 +86,43 @@ export function InfoPanel({
         </div>
       )}
 
-      {isDone && (
-        <div className="info-card">
-          <p className="status-line status-done">{t.lineComplete(mode)}</p>
-          <div className="button-row">
-            <button type="button" className="secondary-button" onClick={onRestart}>
-              {t.playAgain}
-            </button>
-            <button type="button" className="secondary-button" onClick={onNextLine}>
-              {t.nextOpening}
-            </button>
-          </div>
-          {canExtend && (
-            <div className="extend-offer">
-              <p className="extend-offer-text">{t.extendPrompt}</p>
-              <button type="button" className="secondary-button" onClick={onExtend}>
-                {t.extendButton}
-              </button>
+      {mode === "steps"
+        ? stepsFinished && (
+            <div className="info-card">
+              <p className="status-line status-done">
+                {stepsLearnedNow ? t.steps.learned : t.steps.refreshed}
+              </p>
+              <div className="button-row">
+                <button type="button" className="secondary-button" onClick={onGoToPractice}>
+                  {t.steps.toPractice}
+                </button>
+                <button type="button" className="secondary-button" onClick={onNextLine}>
+                  {t.nextOpening}
+                </button>
+              </div>
+            </div>
+          )
+        : isDone && (
+            <div className="info-card">
+              <p className="status-line status-done">{t.lineComplete(mode)}</p>
+              <div className="button-row">
+                <button type="button" className="secondary-button" onClick={onRestart}>
+                  {t.playAgain}
+                </button>
+                <button type="button" className="secondary-button" onClick={onNextLine}>
+                  {t.nextOpening}
+                </button>
+              </div>
+              {canExtend && (
+                <div className="extend-offer">
+                  <p className="extend-offer-text">{t.extendPrompt}</p>
+                  <button type="button" className="secondary-button" onClick={onExtend}>
+                    {t.extendButton}
+                  </button>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
     </aside>
   );
 }

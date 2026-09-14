@@ -1,6 +1,5 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import type { LineProgress } from "./storage";
-import { isNative } from "./native";
 
 // A single, always-replaced local notification (fixed id) rather than one
 // per due line — SM-2 due dates drift continuously, so anything more than
@@ -25,9 +24,12 @@ function persist(enabled: boolean): void {
   }
 }
 
-/** Requests the OS permission and persists the outcome. No-op (false) on web. */
+/**
+ * Requests the OS permission and persists the outcome. Works on the web
+ * build too — the plugin falls back to the browser Notification API there,
+ * which fires while the tab is open (weaker than iOS, but not nothing).
+ */
 export async function requestReminderPermission(): Promise<boolean> {
-  if (!isNative) return false;
   try {
     const result = await LocalNotifications.requestPermissions();
     const granted = result.display === "granted";
@@ -61,8 +63,6 @@ export async function syncReviewReminder(
   progress: Record<string, LineProgress>,
   copy: ReminderCopy,
 ): Promise<void> {
-  if (!isNative) return;
-
   try {
     await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
   } catch {

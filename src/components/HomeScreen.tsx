@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Theme } from "../hooks/useTheme";
 import type { Dictionary, Language } from "../i18n/translations";
+import type { ReminderToggleResult } from "../hooks/useReminders";
 import { LanguagePicker } from "./LanguagePicker";
 import { ThemeToggle } from "./ThemeToggle";
+import { ReminderToggle } from "./ReminderToggle";
 import { isNative } from "../utils/native";
 
 // The full launch sequence (logo blooms in, then title, tagline and cards
@@ -19,11 +21,8 @@ interface HomeScreenProps {
   onToggleTheme: () => void;
   onOpenFinder: () => void;
   onStartTrainer: () => void;
-  onBrowseOpenings: () => void;
-  onOpenSkillMap: () => void;
   remindersEnabled: boolean;
-  onEnableReminders: () => void;
-  onDisableReminders: () => void;
+  onToggleReminders: () => Promise<ReminderToggleResult>;
 }
 
 export function HomeScreen({
@@ -34,16 +33,30 @@ export function HomeScreen({
   onToggleTheme,
   onOpenFinder,
   onStartTrainer,
-  onBrowseOpenings,
-  onOpenSkillMap,
   remindersEnabled,
-  onEnableReminders,
-  onDisableReminders,
+  onToggleReminders,
 }: HomeScreenProps) {
   const [intro] = useState(() => !introPlayed);
   useEffect(() => {
     introPlayed = true;
   }, []);
+
+  // An icon-only toggle can show on and off, but not "the OS refused" —
+  // a blocked tap would otherwise just do nothing at all, which reads as a
+  // broken button. Hover tooltips do not exist on a phone, so the refusal
+  // has to say so on screen. Timestamped rather than boolean so tapping
+  // again while the message is up restarts its dismissal timer.
+  const [blockedAt, setBlockedAt] = useState(0);
+  useEffect(() => {
+    if (blockedAt === 0) return;
+    const id = setTimeout(() => setBlockedAt(0), 5000);
+    return () => clearTimeout(id);
+  }, [blockedAt]);
+
+  const handleToggleReminders = async () => {
+    const result = await onToggleReminders();
+    setBlockedAt(result === "blocked" ? Date.now() : 0);
+  };
 
   return (
     <div
@@ -56,13 +69,29 @@ export function HomeScreen({
         (intro && isNative ? " home-screen-intro-native" : "")
       }
     >
-      <div className="home-theme-toggle">
+      <div className="home-corner-controls">
+        <ReminderToggle
+          enabled={remindersEnabled}
+          label={
+            remindersEnabled
+              ? t.notifications.disableLabel
+              : blockedAt !== 0
+                ? t.notifications.deniedLabel
+                : t.notifications.enableLabel
+          }
+          onToggle={handleToggleReminders}
+        />
         <ThemeToggle
           theme={theme}
           label={theme === "dark" ? t.switchToLight : t.switchToDark}
           onToggle={onToggleTheme}
         />
       </div>
+      {blockedAt !== 0 && (
+        <p className="home-reminder-blocked" role="status">
+          {t.notifications.deniedLabel}
+        </p>
+      )}
       <div className="home-hero">
         <img
           src={`${import.meta.env.BASE_URL}rook-logo.png`}
@@ -78,32 +107,6 @@ export function HomeScreen({
       <div className="home-actions">
         <div className="info-card home-language-card">
           <LanguagePicker language={language} onSelect={onSelectLanguage} />
-          {/* Native only: local notifications are a no-op on the web build,
-              so the control would just be a switch that does nothing. */}
-          {isNative && (
-            <>
-              <div className="control-row">
-                <span className="control-label">🔔 {t.notifications.toggleLabel}</span>
-                <div className="segmented">
-                  <button
-                    type="button"
-                    className={!remindersEnabled ? "segmented-active" : ""}
-                    onClick={onDisableReminders}
-                  >
-                    {t.notifications.off}
-                  </button>
-                  <button
-                    type="button"
-                    className={remindersEnabled ? "segmented-active" : ""}
-                    onClick={onEnableReminders}
-                  >
-                    {t.notifications.on}
-                  </button>
-                </div>
-              </div>
-              <p className="home-reminders-hint">{t.notifications.permissionHint}</p>
-            </>
-          )}
         </div>
         <button type="button" className="home-action-card" onClick={onStartTrainer}>
           <span className="home-action-title-row">
@@ -116,30 +119,8 @@ export function HomeScreen({
           </span>
           <span className="home-action-hint">{t.home.startTrainerHint}</span>
         </button>
-        <button type="button" className="home-action-card" onClick={onBrowseOpenings}>
-          <span className="home-action-title-row">
-            <img
-              src={`${import.meta.env.BASE_URL}openings-icon.png`}
-              alt=""
-              className="home-action-icon"
-            />
-            <span className="home-action-label">{t.home.browseOpenings}</span>
-          </span>
-          <span className="home-action-hint">{t.home.browseOpeningsHint}</span>
-        </button>
         <button type="button" className="home-finder-trigger" onClick={onOpenFinder}>
           {t.finder.trigger}
-        </button>
-        <button type="button" className="home-action-card" onClick={onOpenSkillMap}>
-          <span className="home-action-title-row">
-            <img
-              src={`${import.meta.env.BASE_URL}skillmap-icon.png`}
-              alt=""
-              className="home-action-icon"
-            />
-            <span className="home-action-label">{t.home.skillMap}</span>
-          </span>
-          <span className="home-action-hint">{t.home.skillMapHint}</span>
         </button>
       </div>
     </div>

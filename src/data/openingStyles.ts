@@ -1,6 +1,13 @@
 export type FirstMove = "e4" | "d4" | "flank";
 export type Risk = "low" | "medium" | "high";
 export type Approach = "classical" | "hypermodern";
+/**
+ * How much the repertoire branches with the opponent's choice. The finder
+ * deliberately asks this as "same setup every game" vs "a specific answer to
+ * whatever they play" rather than "how much theory will you memorize?" —
+ * the honest answer to that one is always "as little as possible", so it
+ * sorted nobody. System openings are "low", main lines "high".
+ */
 export type Theory = "low" | "medium" | "high";
 
 export interface OpeningStyleProfile {
@@ -29,6 +36,7 @@ export const openingStyles: Record<string, OpeningStyleProfile> = {
   "french-winawer": { firstMove: "e4", risk: "high", approach: "classical", theory: "high" },
   "caro-kann-classical": { firstMove: "e4", risk: "low", approach: "classical", theory: "low" },
   "caro-kann-advance": { firstMove: "e4", risk: "low", approach: "classical", theory: "low" },
+  "caro-kann-exchange": { firstMove: "e4", risk: "low", approach: "classical", theory: "low" },
   "pirc-defence": { firstMove: "e4", risk: "medium", approach: "hypermodern", theory: "medium" },
   "scandinavian-defence": { firstMove: "e4", risk: "low", approach: "classical", theory: "low" },
   "qgd-main-line": { firstMove: "d4", risk: "low", approach: "classical", theory: "medium" },
@@ -39,5 +47,7 @@ export const openingStyles: Record<string, OpeningStyleProfile> = {
   "grunfeld-defence": { firstMove: "d4", risk: "high", approach: "hypermodern", theory: "high" },
   "english-opening": { firstMove: "flank", risk: "medium", approach: "hypermodern", theory: "medium" },
   "london-system": { firstMove: "d4", risk: "low", approach: "classical", theory: "low" },
+  "london-fianchetto": { firstMove: "d4", risk: "low", approach: "classical", theory: "low" },
+  "london-c5-break": { firstMove: "d4", risk: "low", approach: "classical", theory: "low" },
   "catalan-opening": { firstMove: "d4", risk: "medium", approach: "hypermodern", theory: "medium" },
 };

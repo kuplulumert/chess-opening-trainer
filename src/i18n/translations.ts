@@ -23,20 +23,35 @@ export interface HomeCopy {
   navLabel: string;
   startTrainer: string;
   startTrainerHint: string;
-  browseOpenings: string;
-  browseOpeningsHint: string;
-  skillMap: string;
-  skillMapHint: string;
 }
 
 export interface NotificationsCopy {
-  toggleLabel: string;
-  on: string;
-  off: string;
-  permissionHint: string;
-  // The scheduled local notification's own text, not shown in-app.
+  // The corner icon-button's tooltip / screen-reader label, per state.
+  enableLabel: string;
+  disableLabel: string;
+  deniedLabel: string;
+  // The scheduled notification's own text, not shown in-app.
   title: string;
   body: string;
+}
+
+export interface StepsCopy {
+  title: string;
+  stageLabel: (stage: number, total: number) => string;
+  finishedLabel: string;
+  rule: (runs: number) => string;
+  shownRunLabel: string;
+  introStatus: string;
+  hintStatus: string;
+  recallStatus: (streak: number, runs: number) => string;
+  mistakeStatus: string;
+  cleanFlash: (streak: number, runs: number) => string;
+  uncountedFlash: string;
+  failedFlash: string;
+  stagePassedFlash: string;
+  learned: string;
+  refreshed: string;
+  toPractice: string;
 }
 
 export interface MapCopy {
@@ -79,6 +94,7 @@ export interface Dictionary {
   mode: string;
   quiz: string;
   study: string;
+  stepsMode: string;
   restart: string;
   stepBack: string;
   stepForward: string;
@@ -110,6 +126,7 @@ export interface Dictionary {
   map: MapCopy;
   home: HomeCopy;
   notifications: NotificationsCopy;
+  steps: StepsCopy;
 }
 
 const en: Dictionary = {
@@ -126,6 +143,7 @@ const en: Dictionary = {
   mode: "Mode",
   quiz: "Practice",
   study: "Study",
+  stepsMode: "Step by step",
   restart: "Restart",
   stepBack: "Previous move",
   stepForward: "Next move",
@@ -148,7 +166,7 @@ const en: Dictionary = {
   switchToDark: "Switch to dark mode",
 
   howToUse:
-    "Pick a line on the left, then choose White or Black — you can drill the same opening from either side. You always play the moves yourself: Study mode shows where to move, Practice mode makes you find it first.",
+    "Pick a line on the left, then choose White or Black — you can drill the same opening from either side. A new line starts in Step by step, which teaches it three half-moves at a time. Practice makes you find each move first; Study shows where to move.",
   dismissGuide: "Dismiss",
 
   extendPrompt: "Want to go deeper into this line?",
@@ -186,11 +204,11 @@ const en: Dictionary = {
         },
       },
       theory: {
-        title: "How much theory are you up for memorizing?",
+        title: "How should your opening work from game to game?",
         options: {
-          low: "As little as possible",
-          medium: "A moderate amount",
-          high: "I'm ready to go deep",
+          low: "Same setup nearly every game",
+          medium: "One main setup, a few variations",
+          high: "A specific answer to whatever they play",
           any: "No preference",
         },
       },
@@ -234,19 +252,33 @@ const en: Dictionary = {
     navLabel: "Home",
     startTrainer: "Start Trainer",
     startTrainerHint: "Jump into your opening and drill it move by move.",
-    browseOpenings: "Browse Openings",
-    browseOpeningsHint: "Explore the full library and pick a line to study.",
-    skillMap: "Skill Map",
-    skillMapHint: "See your progress across every opening family.",
   },
 
   notifications: {
-    toggleLabel: "Review reminders",
-    on: "On",
-    off: "Off",
-    permissionHint: "If iOS denies the prompt, re-enable notifications for this app from Settings.",
+    enableLabel: "Turn on review reminders",
+    disableLabel: "Turn off review reminders",
+    deniedLabel: "Notifications are blocked — allow them in Settings",
     title: "Opening Trainer",
     body: "A line is ready for review — keep your streak going.",
+  },
+
+  steps: {
+    title: "Step by step progress",
+    stageLabel: (stage, total) => `Stage ${stage} of ${total}`,
+    finishedLabel: "All stages done",
+    rule: (runs) => `1 intro + ${runs} clean runs`,
+    shownRunLabel: "This run shows moves and doesn't count",
+    introStatus: "New moves are shown on the board. This run doesn't count.",
+    hintStatus: "The move you missed is shown. This run doesn't count.",
+    recallStatus: (streak, runs) => `No hints now — ${runs} clean runs in a row (${streak}/${runs}).`,
+    mistakeStatus: "Mistake — streak reset. This run won't count.",
+    cleanFlash: (streak, runs) => `Clean run — ${streak}/${runs}.`,
+    uncountedFlash: "Done. The next run counts.",
+    failedFlash: "That run had a mistake — the missed move will be shown.",
+    stagePassedFlash: "Stage passed — the next moves are coming up.",
+    learned: "Line learned — it's in your review queue, first review tomorrow.",
+    refreshed: "Line refreshed. Your review schedule hasn't changed.",
+    toPractice: "Go to Practice",
   },
 };
 
@@ -264,6 +296,7 @@ const tr: Dictionary = {
   mode: "Mod",
   quiz: "Pratik",
   study: "Çalışma",
+  stepsMode: "Adım adım",
   restart: "Baştan başla",
   stepBack: "Önceki hamle",
   stepForward: "Sonraki hamle",
@@ -286,7 +319,7 @@ const tr: Dictionary = {
   switchToDark: "Koyu temaya geç",
 
   howToUse:
-    "Soldan bir açılış seç, sonra Beyaz ya da Siyah tarafı seç — aynı açılışı iki taraftan da çalışabilirsin. Hamleleri her zaman sen oynarsın: Çalışma modunda nereye oynayacağın gösterilir, Pratik modunda önce kendin bulmaya çalışırsın.",
+    "Soldan bir açılış seç, sonra Beyaz ya da Siyah tarafı seç — aynı açılışı iki taraftan da çalışabilirsin. Yeni bir hat Adım adım modunda başlar ve üçer yarı hamle öğretilir. Pratik'te her hamleyi önce kendin bulursun; Çalışma'da nereye oynayacağın gösterilir.",
   dismissGuide: "Kapat",
 
   extendPrompt: "Bu açılışta biraz daha derine inmek ister misin?",
@@ -324,11 +357,11 @@ const tr: Dictionary = {
         },
       },
       theory: {
-        title: "Ne kadar teori ezberlemeye hazırsın?",
+        title: "Açılışın oyundan oyuna nasıl işlesin?",
         options: {
-          low: "Mümkün olduğunca az",
-          medium: "Orta düzeyde",
-          high: "Derinlere inmeye hazırım",
+          low: "Neredeyse her oyunda aynı kuruluş",
+          medium: "Tek ana kuruluş, birkaç varyasyon",
+          high: "Rakip ne oynarsa ona özel cevap",
           any: "Farketmez",
         },
       },
@@ -371,19 +404,33 @@ const tr: Dictionary = {
     navLabel: "Ana Sayfa",
     startTrainer: "Antrenöre Başla",
     startTrainerHint: "Açılışına gir, hamle hamle çalış.",
-    browseOpenings: "Açılışlara Gözat",
-    browseOpeningsHint: "Tüm açılış kütüphanesine göz at, bir hat seç.",
-    skillMap: "Yetenek Haritası",
-    skillMapHint: "Tüm açılış ailelerindeki ilerlemeni gör.",
   },
 
   notifications: {
-    toggleLabel: "Tekrar hatırlatıcıları",
-    on: "Açık",
-    off: "Kapalı",
-    permissionHint: "iOS izni reddederse bu uygulama için bildirimleri Ayarlar'dan tekrar açabilirsin.",
+    enableLabel: "Tekrar hatırlatıcılarını aç",
+    disableLabel: "Tekrar hatırlatıcılarını kapat",
+    deniedLabel: "Bildirimler engellenmiş — Ayarlar'dan izin ver",
     title: "Açılış Antrenörü",
     body: "Bir hat tekrar için hazır — serini sürdür.",
+  },
+
+  steps: {
+    title: "Adım adım ilerleme",
+    stageLabel: (stage, total) => `Aşama ${stage} / ${total}`,
+    finishedLabel: "Tüm aşamalar tamam",
+    rule: (runs) => `1 tanıtım + ${runs} temiz tur`,
+    shownRunLabel: "Bu turda hamleler gösteriliyor, sayılmaz",
+    introStatus: "Yeni hamleler tahtada gösteriliyor. Bu tur sayılmaz.",
+    hintStatus: "Kaçırdığın hamle gösteriliyor. Bu tur sayılmaz.",
+    recallStatus: (streak, runs) => `Artık ipucu yok — üst üste ${runs} temiz tur (${streak}/${runs}).`,
+    mistakeStatus: "Hata — seri sıfırlandı, bu tur sayılmayacak.",
+    cleanFlash: (streak, runs) => `Temiz tur — ${streak}/${runs}.`,
+    uncountedFlash: "Tamam. Sıradaki tur sayılır.",
+    failedFlash: "Bu turda hata vardı — kaçırdığın hamle gösterilecek.",
+    stagePassedFlash: "Aşama geçildi — sıradaki hamleler geliyor.",
+    learned: "Hat öğrenildi — tekrar kuyruğuna girdi, ilk tekrar yarın.",
+    refreshed: "Hat tazelendi. Tekrar takvimin değişmedi.",
+    toPractice: "Pratik'e geç",
   },
 };
 

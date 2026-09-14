@@ -17,7 +17,7 @@ interface BoardPanelProps {
   openingName: string;
   canStepBack: boolean;
   canStepForward: boolean;
-  /** Practice mode only — Study mode already shows the move on the board. */
+  /** Hidden in Study mode, which already shows every move on the board. */
   hintVisible: boolean;
   canHint: boolean;
   mode: TrainerMode;
@@ -29,6 +29,8 @@ interface BoardPanelProps {
   onStepForward: () => void;
   onRestart: () => void;
   onHint: () => void;
+  /** Rendered under the toolbar, inside the board's own column. */
+  children?: React.ReactNode;
 }
 
 function findMoveSquares(fen: string, san: string): { from: Square; to: Square } | null {
@@ -58,6 +60,7 @@ export function BoardPanel({
   onStepForward,
   onRestart,
   onHint,
+  children,
 }: BoardPanelProps) {
   const orientation = playerColor === "w" ? "white" : "black";
 
@@ -184,23 +187,28 @@ export function BoardPanel({
               {t.black}
             </button>
           </div>
-          <div className="mini-toggle" role="group" aria-label={t.mode}>
-            <button
-              type="button"
-              className={mode === "quiz" ? "mini-toggle-active" : ""}
-              onClick={() => onModeChange("quiz")}
+          {/* The active mode and a chevron, not three words side by side:
+              with Step by step added, three text toggles left the name
+              ~85px on a phone and cut off 16 of the 18 line names. The real
+              <select> sits invisibly on top of the label so the tap opens
+              the platform's own picker; it's 16px because iOS zooms the page
+              when a smaller field takes focus, while the label under it
+              stays at the header's 11px. */}
+          <span className="mini-select">
+            <span aria-hidden="true">
+              {mode === "steps" ? t.stepsMode : mode === "quiz" ? t.quiz : t.study}
+            </span>
+            <select
+              className="mini-select-native"
+              value={mode}
+              aria-label={t.mode}
+              onChange={(event) => onModeChange(event.target.value as TrainerMode)}
             >
-              {t.quiz}
-            </button>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              className={mode === "study" ? "mini-toggle-active" : ""}
-              onClick={() => onModeChange("study")}
-            >
-              {t.study}
-            </button>
-          </div>
+              <option value="steps">{t.stepsMode}</option>
+              <option value="quiz">{t.quiz}</option>
+              <option value="study">{t.study}</option>
+            </select>
+          </span>
         </div>
       </div>
       <div className={"board-wrap" + (feedback === "wrong" ? " board-shake" : "")}>
@@ -283,6 +291,7 @@ export function BoardPanel({
           </svg>
         </button>
       </div>
+      {children}
     </div>
   );
 }

@@ -9,6 +9,11 @@ export interface LineProgress {
    *  in place with no migration step, and a line with no `srs` yet just
    *  isn't part of the due-for-review queue (see data/dueLines.ts). */
   srs?: SrsState;
+  /** Adım Adım: the stage this line+side has reached, so leaving mid-way
+   *  resumes there. Only the stage — never the clean-run streak, which only
+   *  means anything within one sitting. Gone once the line is learned:
+   *  recordReview rewrites the record without it. */
+  stepStage?: number;
 }
 
 type ProgressMap = Record<string, LineProgress>;
@@ -41,6 +46,13 @@ export function getProgress(lineId: string, color: "w" | "b"): LineProgress {
 
 export function getAllProgress(): ProgressMap {
   return loadAll();
+}
+
+export function saveStepStage(lineId: string, color: "w" | "b", stage: number): void {
+  const map = loadAll();
+  const k = key(lineId, color);
+  map[k] = { ...(map[k] ?? { completions: 0, lastCompletedAt: null }), stepStage: stage };
+  saveAll(map);
 }
 
 /**

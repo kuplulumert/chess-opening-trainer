@@ -5,6 +5,9 @@ import {
   requestReminderPermission,
 } from "../utils/notifications";
 
+/** What a toggle attempt actually did — "blocked" means the OS refused. */
+export type ReminderToggleResult = "on" | "off" | "blocked";
+
 /**
  * Whether the trainee has opted into review reminders — React state (not
  * just a localStorage read) so flipping it immediately drives the effect in
@@ -14,16 +17,19 @@ import {
 export function useReminders() {
   const [enabled, setEnabled] = useState(() => getStoredRemindersEnabled());
 
-  const enableReminders = useCallback(async () => {
+  // Reports the outcome rather than just flipping state: a refused request
+  // and a deliberate switch-off both leave the toggle dark, and the caller
+  // has to tell them apart to explain the first one.
+  const toggleReminders = useCallback(async (): Promise<ReminderToggleResult> => {
+    if (enabled) {
+      clearReminderPref();
+      setEnabled(false);
+      return "off";
+    }
     const granted = await requestReminderPermission();
     setEnabled(granted);
-    return granted;
-  }, []);
+    return granted ? "on" : "blocked";
+  }, [enabled]);
 
-  const disableReminders = useCallback(() => {
-    clearReminderPref();
-    setEnabled(false);
-  }, []);
-
-  return { remindersEnabled: enabled, enableReminders, disableReminders };
+  return { remindersEnabled: enabled, toggleReminders };
 }

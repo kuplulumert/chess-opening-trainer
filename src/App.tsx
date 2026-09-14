@@ -11,26 +11,43 @@ import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
 import { HomeScreen } from "./components/HomeScreen";
 import { TabBar } from "./components/TabBar";
-import { getAllProgress, recordReview } from "./utils/storage";
+import { getAllProgress, recordReview, saveStepStage } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
 import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
 import { useLanguage } from "./hooks/useLanguage";
 import { useReminders } from "./hooks/useReminders";
 import { syncReviewReminder } from "./utils/notifications";
+import { CLEAN_RUNS_TO_PASS, useStepSession, type StepSessionState } from "./hooks/useStepSession";
+import { StepProgress } from "./components/StepProgress";
 import "./App.css";
+
+// How long a finished Adım Adım run stays on its final position, with its
+// result showing, before the next run starts over from move one.
+const STEP_RUN_PAUSE_MS = 900;
+
+interface PendingStep {
+  next: StepSessionState;
+  resetBoard: boolean;
+  /** Storage was already written for this run; the in-memory copy lags. */
+  progressChanged: boolean;
+}
 
 function App() {
   const [selectedId, setSelectedId] = useState(openingsEn[0].id);
   const [playerColor, setPlayerColor] = useState<PlayerColor>("w");
-  const [mode, setMode] = useState<TrainerMode>("study");
+  // Opens the way selectOpening would: Adım Adım until the line is learned
+  // on that side, Practice after.
+  const [mode, setMode] = useState<TrainerMode>(() =>
+    getAllProgress()[`${openingsEn[0].id}:w`]?.srs ? "quiz" : "steps",
+  );
   const [progress, setProgress] = useState(() => getAllProgress());
   const [extended, setExtended] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
   const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
   const { theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
-  const { remindersEnabled, enableReminders, disableReminders } = useReminders();
+  const { remindersEnabled, toggleReminders } = useReminders();
 
   const openings = useMemo(() => getLocalizedOpenings(language), [language]);
   const line = openings.find((o) => o.id === selectedId) ?? openings[0];
@@ -46,11 +63,27 @@ function App() {
     setExtended(false);
   }
 
+  // A line+side counts as learned once it has an SRS record — whether that
+  // came from finishing Adım Adım or from Practice runs before the mode
+  // existed, so nobody's earlier progress gets sent back to stage one.
+  const lineProgress = progress[`${line.id}:${playerColor}`];
+  const lineLearned = Boolean(lineProgress?.srs);
+  // An unlearned line resumes at the stage it reached; a learned one opened
+  // in Adım Adım is a refresher and always starts from the top.
+  const steps = useStepSession(
+    line,
+    playerColor,
+    mode === "steps",
+    lineLearned ? 0 : (lineProgress?.stepStage ?? 0),
+  );
+
   // A run's own line stays untouched until the trainee opts in to the extra
   // 5 plies via the "extend" offer shown once the base line is complete —
   // extending swaps in a longer moves/comments list under the same id, so
   // useOpeningTrainer picks up right where it left off instead of resetting.
+  // In Adım Adım a run is only the current stage's share of the line.
   const activeLine = useMemo(() => {
+    if (mode === "steps") return steps.line;
     if (!extended || !line.extension) return line;
     return {
       ...line,
@@ -58,16 +91,21 @@ function App() {
       comments: [...line.comments, ...line.extension.comments],
       strategy: [...line.strategy, ...line.extension.strategy],
     };
-  }, [line, extended]);
+  }, [mode, steps.line, line, extended]);
 
-  const trainer = useOpeningTrainer(activeLine, playerColor, mode);
+  const trainer = useOpeningTrainer(
+    activeLine,
+    playerColor,
+    mode,
+    mode === "steps" ? steps.shownPlies : undefined,
+  );
 
   // Record a completion once per run-through of a line, not once per
   // render — and only in quiz mode, same as before: Study mode is guided,
   // so it isn't a real recall test and shouldn't feed the SM-2 scheduler
   // any more than it fed the old medal count.
   const recordedRef = useRef<string | null>(null);
-  const { isDone, mistakeCount, hintUsedInRun } = trainer;
+  const { isDone, mistakeCount, hintUsedInRun, missedPlies } = trainer;
   useEffect(() => {
     if (!isDone) {
       recordedRef.current = null;
@@ -81,11 +119,88 @@ function App() {
     setProgress(getAllProgress());
   }, [isDone, mode, line.id, playerColor, mistakeCount, hintUsedInRun]);
 
+  // Adım Adım: a finished run is judged the moment it ends, left on its
+  // final position for a beat with the result showing, then the next run
+  // starts over from move one. Storage is written at once, so a finished
+  // run is never lost; every React update waits for the beat to end. The
+  // pending step lives in a ref rather than this effect's cleanup, so
+  // renders during the beat can't cancel it.
+  const stepTimerRef = useRef<number | undefined>(undefined);
+  const pendingStepRef = useRef<PendingStep | null>(null);
+  const stepJudgedRef = useRef(false);
+  const { judgeRun, apply: applyStep, finished: stepsFinished } = steps;
+  const resetBoard = trainer.reset;
+
+  const flushPendingStep = useCallback(() => {
+    window.clearTimeout(stepTimerRef.current);
+    const pending = pendingStepRef.current;
+    pendingStepRef.current = null;
+    if (!pending) return;
+    if (pending.progressChanged) setProgress(getAllProgress());
+    applyStep(pending.next);
+    if (pending.resetBoard) resetBoard();
+  }, [applyStep, resetBoard]);
+
+  useEffect(() => {
+    if (mode !== "steps") return;
+    if (!isDone) {
+      stepJudgedRef.current = false;
+      return;
+    }
+    if (stepJudgedRef.current || stepsFinished) return;
+    stepJudgedRef.current = true;
+
+    const { outcome, next } = judgeRun(missedPlies);
+    // Only an unlearned line is written: finishing it is its first
+    // completion (Bronze) and first review. Rerunning a learned line here is
+    // a refresher with shown runs in it, not a recall test, so it leaves the
+    // record alone.
+    let progressChanged = false;
+    if (!lineLearned && outcome === "finished") {
+      recordReview(line.id, playerColor, 0, false);
+      progressChanged = true;
+    } else if (!lineLearned && outcome === "stagePassed") {
+      saveStepStage(line.id, playerColor, next.stage);
+      progressChanged = true;
+    }
+    pendingStepRef.current = {
+      next: outcome === "finished" ? { ...next, learnedNow: !lineLearned } : next,
+      // A finish has no next run: the board stays on the final position
+      // under the finish card.
+      resetBoard: outcome !== "finished",
+      progressChanged,
+    };
+    stepTimerRef.current = window.setTimeout(flushPendingStep, STEP_RUN_PAUSE_MS);
+  }, [
+    mode,
+    isDone,
+    stepsFinished,
+    judgeRun,
+    missedPlies,
+    lineLearned,
+    line.id,
+    playerColor,
+    flushPendingStep,
+  ]);
+
+  // A pending next run belongs to the run it came from — drop it if the
+  // line, side, or mode changes during the beat, or on unmount. Its result
+  // is already in storage, so only the in-memory copy needs catching up.
+  useEffect(
+    () => () => {
+      window.clearTimeout(stepTimerRef.current);
+      const pending = pendingStepRef.current;
+      pendingStepRef.current = null;
+      if (pending?.progressChanged) setProgress(getAllProgress());
+    },
+    [runKey],
+  );
+
   // Re-derives the one pending "review due" notification from the latest
   // progress every time it changes (a review just got recorded) and on
   // first load (app launch) — see syncReviewReminder for why there's only
-  // ever at most one pending. No-op on web and while the trainee has
-  // reminders turned off.
+  // ever at most one pending. Does nothing while the trainee has reminders
+  // turned off, beyond clearing whatever was already scheduled.
   useEffect(() => {
     syncReviewReminder(remindersEnabled, progress, {
       title: t.notifications.title,
@@ -112,11 +227,30 @@ function App() {
 
   // A line is trained as whichever side's repertoire it belongs to — the
   // same classification the openings list is split by, so picking from
-  // one of its two tabs always lands you on that colour.
-  const selectOpening = useCallback((id: string) => {
-    setSelectedId(id);
-    setPlayerColor(sideOf(id));
-  }, []);
+  // one of its two tabs always lands you on that colour — and opens in
+  // Adım Adım until it's learned on that side, Practice after.
+  const selectOpening = useCallback(
+    (id: string) => {
+      const side = sideOf(id);
+      setSelectedId(id);
+      setPlayerColor(side);
+      setMode(progress[`${id}:${side}`]?.srs ? "quiz" : "steps");
+    },
+    [progress],
+  );
+
+  // Switching sides is opening the line from the other side, so the same
+  // learned-or-not choice applies — except in Study, which is an explicit
+  // "just show me" and stays put.
+  const handleColorChange = useCallback(
+    (color: PlayerColor) => {
+      setPlayerColor(color);
+      setMode((current) =>
+        current === "study" ? current : progress[`${selectedId}:${color}`]?.srs ? "quiz" : "steps",
+      );
+    },
+    [progress, selectedId],
+  );
 
   const handleSelect = useCallback(
     (next: OpeningLine) => {
@@ -141,17 +275,38 @@ function App() {
 
   const handleRestart = useCallback(() => {
     setExtended(false);
+    if (mode === "steps") {
+      const pending = pendingStepRef.current;
+      if (pending) {
+        // Mid-beat: that run already finished and was judged — keep it. If
+        // it was the last one, restart means going through the stages again.
+        flushPendingStep();
+        if (pending.next.finished) steps.restart();
+      } else if (stepsFinished) {
+        steps.restart();
+      } else if (missedPlies.length > 0) {
+        // Restarting doesn't wipe a mistake: the new run shows the missed move.
+        applyStep(judgeRun(missedPlies).next);
+      }
+    }
     trainer.reset();
-  }, [trainer]);
+  }, [mode, flushPendingStep, stepsFinished, steps, missedPlies, applyStep, judgeRun, trainer]);
 
   const handleExtend = useCallback(() => {
     setExtended(true);
   }, []);
 
+  const handleGoToPractice = useCallback(() => setMode("quiz"), []);
+
+  // Same as picking from the list or the map: the point of choosing a line
+  // is to go train it. Closing the finder without switching views dropped
+  // the trainee back on whatever screen they opened it from — on Home that
+  // looked like the pick simply hadn't registered.
   const handleFinderSelect = useCallback(
     (next: OpeningLine) => {
       selectOpening(next.id);
       setFinderOpen(false);
+      setView("trainer");
     },
     [selectOpening],
   );
@@ -174,6 +329,43 @@ function App() {
     setMode("quiz");
     setView("trainer");
   }, []);
+
+  // During the beat between runs, the result on screen is the finished run
+  // judged again here — pure, nothing stored — so it can't drift from the
+  // step the timer is about to apply.
+  const beat = mode === "steps" && isDone && !steps.finished ? judgeRun(missedPlies) : null;
+  const beatFlash = beat && {
+    text:
+      beat.outcome === "failed"
+        ? t.steps.failedFlash
+        : beat.outcome === "uncounted"
+          ? t.steps.uncountedFlash
+          : beat.outcome === "stagePassed"
+            ? t.steps.stagePassedFlash
+            : t.steps.cleanFlash(beat.next.streak, CLEAN_RUNS_TO_PASS),
+    // A passed stage lights all its dots for the beat before they reset.
+    streak: beat.outcome === "stagePassed" ? CLEAN_RUNS_TO_PASS : beat.next.streak,
+  };
+  // A mistake in a counting run drops the streak on screen right away, not
+  // only once the run ends — that's when the trainee needs to know.
+  const liveMistake = steps.phase === "recall" && missedPlies.length > 0;
+  const shownStreak = steps.finished
+    ? CLEAN_RUNS_TO_PASS
+    : beatFlash
+      ? beatFlash.streak
+      : liveMistake
+        ? 0
+        : steps.streak;
+  const stepStatus = steps.finished
+    ? ""
+    : (beatFlash?.text ??
+      (steps.phase === "intro"
+        ? t.steps.introStatus
+        : steps.phase === "hint"
+          ? t.steps.hintStatus
+          : liveMistake
+            ? t.steps.mistakeStatus
+            : t.steps.recallStatus(steps.streak, CLEAN_RUNS_TO_PASS)));
 
   return (
     <>
@@ -239,11 +431,8 @@ function App() {
           onToggleTheme={toggleTheme}
           onOpenFinder={() => setFinderOpen(true)}
           onStartTrainer={() => setView("trainer")}
-          onBrowseOpenings={() => setView("openings")}
-          onOpenSkillMap={() => setView("map")}
           remindersEnabled={remindersEnabled}
-          onEnableReminders={enableReminders}
-          onDisableReminders={disableReminders}
+          onToggleReminders={toggleReminders}
         />
       ) : view === "map" ? (
         <SkillMap
@@ -292,7 +481,7 @@ function App() {
               hintSan={trainer.revealedHint}
               openingName={line.name}
               mode={mode}
-              onColorChange={setPlayerColor}
+              onColorChange={handleColorChange}
               onModeChange={setMode}
               canStepBack={trainer.canStepBack}
               canStepForward={trainer.canStepForward}
@@ -301,10 +490,23 @@ function App() {
               onStepBack={trainer.stepBack}
               onStepForward={trainer.stepForward}
               onRestart={handleRestart}
-              hintVisible={mode === "quiz"}
+              hintVisible={mode !== "study"}
               canHint={!trainer.isDone}
               onHint={trainer.requestHint}
-            />
+            >
+              {mode === "steps" && (
+                <StepProgress
+                  stage={steps.stage}
+                  stageCount={steps.stageCount}
+                  showsMoves={!steps.finished && steps.phase !== "recall"}
+                  cleanRuns={shownStreak}
+                  runsToPass={CLEAN_RUNS_TO_PASS}
+                  finished={steps.finished}
+                  status={stepStatus}
+                  t={t}
+                />
+              )}
+            </BoardPanel>
           </main>
           <InfoPanel
             mode={mode}
@@ -312,13 +514,16 @@ function App() {
             isDone={trainer.isDone}
             currentComment={trainer.currentComment}
             isPlayerTurn={trainer.isPlayerTurn}
-            canExtend={Boolean(line.extension) && !extended}
+            canExtend={mode !== "steps" && Boolean(line.extension) && !extended}
             whiteStrategy={trainer.whiteStrategy}
             blackStrategy={trainer.blackStrategy}
             t={t}
             onRestart={handleRestart}
             onNextLine={handleNextLine}
             onExtend={handleExtend}
+            stepsFinished={steps.finished}
+            stepsLearnedNow={steps.learnedNow}
+            onGoToPractice={handleGoToPractice}
           />
         </div>
       )}
