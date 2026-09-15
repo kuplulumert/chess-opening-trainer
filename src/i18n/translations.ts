@@ -39,6 +39,8 @@ export interface StepsCopy {
   title: string;
   stageLabel: (stage: number, total: number) => string;
   finishedLabel: string;
+  // Throws away the stage reached and goes back to stage one.
+  fromScratch: string;
   // Which run is in progress, always on screen: "Rep 2 of 3" and so on.
   repLabel: (rep: number, total: number) => string;
   introRunLabel: string;
@@ -64,14 +66,18 @@ export interface StepsCopy {
   beatNext: (label: string) => string;
   beatNextStage: (stage: number, moves: number) => string;
   beatTap: string;
-  // The card over the board the first time a line opens in the mode.
-  welcomeTitle: string;
-  welcomeBody: (stages: number) => string;
-  welcomeSteps: (runs: number) => [string, string, string];
-  welcomeStart: string;
   learned: string;
   refreshed: string;
   toPractice: string;
+}
+
+// The card over the board before each opening: one short line per mode.
+export interface ModeIntroCopy {
+  title: string;
+  recommended: string;
+  steps: string;
+  quiz: string;
+  study: string;
 }
 
 export interface MapCopy {
@@ -147,6 +153,7 @@ export interface Dictionary {
   home: HomeCopy;
   notifications: NotificationsCopy;
   steps: StepsCopy;
+  modeIntro: ModeIntroCopy;
 }
 
 const en: Dictionary = {
@@ -286,6 +293,7 @@ const en: Dictionary = {
     title: "Step by step progress",
     stageLabel: (stage, total) => `Stage ${stage} of ${total}`,
     finishedLabel: "All stages done",
+    fromScratch: "Start from scratch",
     repLabel: (rep, total) => `Rep ${rep} of ${total}`,
     introRunLabel: "Intro run",
     hintRunLabel: "Hint run",
@@ -311,18 +319,17 @@ const en: Dictionary = {
     beatNext: (label) => `Next: ${label} · from the start`,
     beatNextStage: (stage, moves) => `Stage ${stage}: ${moves} new move${moves === 1 ? "" : "s"}`,
     beatTap: "Tap to continue",
-    welcomeTitle: "Learn it step by step",
-    welcomeBody: (stages) =>
-      `This line is split into ${stages} stages. Each stage is a 3-move chunk: your move, the reply, your move.`,
-    welcomeSteps: (runs) => [
-      "First, the new moves are shown on the board.",
-      `Then you replay the line from the start ${runs} times without a mistake.`,
-      "A mistake resets the streak and shows the missed move again.",
-    ],
-    welcomeStart: "Start",
     learned: "Line learned — it's in your review queue, first review tomorrow.",
     refreshed: "Line refreshed. Your review schedule hasn't changed.",
     toPractice: "Go to Practice",
+  },
+
+  modeIntro: {
+    title: "How do you want to train?",
+    recommended: "Recommended",
+    steps: "Learn it in 3-move chunks, with lots of reps.",
+    quiz: "Play the whole line from memory to test yourself.",
+    study: "Moves are shown — study straight through, no reps.",
   },
 };
 
@@ -462,6 +469,7 @@ const tr: Dictionary = {
     title: "Adım adım ilerleme",
     stageLabel: (stage, total) => `Aşama ${stage} / ${total}`,
     finishedLabel: "Tüm aşamalar tamam",
+    fromScratch: "Sıfırdan başla",
     repLabel: (rep, total) => `Tekrar ${rep} / ${total}`,
     introRunLabel: "Tanıtım turu",
     hintRunLabel: "İpuçlu tur",
@@ -487,18 +495,17 @@ const tr: Dictionary = {
     beatNext: (label) => `Sıradaki: ${label} · baştan`,
     beatNextStage: (stage, moves) => `Aşama ${stage}: ${moves} yeni hamle`,
     beatTap: "Devam için dokun",
-    welcomeTitle: "Adım adım öğrenme",
-    welcomeBody: (stages) =>
-      `Bu hat ${stages} aşamaya bölündü. Her aşama 3 hamlelik bir parça: senin hamlen, rakibin cevabı, senin hamlen.`,
-    welcomeSteps: (runs) => [
-      "Önce yeni hamleler tahtada gösterilir.",
-      `Sonra hattı baştan ${runs} kez hatasız tekrar edersin.`,
-      "Hata yaparsan seri sıfırlanır ve kaçırdığın hamle yeniden gösterilir.",
-    ],
-    welcomeStart: "Başla",
     learned: "Hat öğrenildi — tekrar kuyruğuna girdi, ilk tekrar yarın.",
     refreshed: "Hat tazelendi. Tekrar takvimin değişmedi.",
     toPractice: "Pratik'e geç",
+  },
+
+  modeIntro: {
+    title: "Nasıl çalışmak istersin?",
+    recommended: "Önerilen",
+    steps: "3 hamlelik parçalarla, bol tekrarla öğren.",
+    quiz: "Tüm hattı ezberden oyna, kendini sına.",
+    study: "Hamleler gösterilir; tekrarsız, kesintisiz çalış.",
   },
 };
 

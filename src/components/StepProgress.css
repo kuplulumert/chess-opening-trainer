@@ -8,11 +8,15 @@
   background: var(--panel-bg);
 }
 
+/* Stage and run read together on the left; "start from scratch" keeps to the
+   right edge. The min-height is the button's, so the row doesn't grow when
+   it appears. */
 .step-progress-head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 24px;
 }
 
 .step-progress-stage {
@@ -30,6 +34,27 @@
   color: var(--accent);
   font-size: 11.5px;
   font-weight: 700;
+}
+
+/* Quiet, and away from the board toolbar: it throws away every stage
+   reached, so it shouldn't be where a thumb lands by accident. */
+.step-progress-scratch {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@media (hover: hover) {
+  .step-progress-scratch:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 
 .step-progress-pips {

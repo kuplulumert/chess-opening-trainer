@@ -13,6 +13,9 @@ interface StepProgressProps {
   runLabel: string;
   finished: boolean;
   status: string;
+  /** Whether there's any progress for "start from scratch" to throw away. */
+  canStartOver: boolean;
+  onStartOver: () => void;
   t: Dictionary;
 }
 
@@ -29,6 +32,8 @@ export function StepProgress({
   runLabel,
   finished,
   status,
+  canStartOver,
+  onStartOver,
   t,
 }: StepProgressProps) {
   return (
@@ -38,6 +43,11 @@ export function StepProgress({
           {finished ? t.steps.finishedLabel : t.steps.stageLabel(stage + 1, stageCount)}
         </span>
         {runLabel && <span className="step-progress-run">{runLabel}</span>}
+        {canStartOver && (
+          <button type="button" className="step-progress-scratch" onClick={onStartOver}>
+            {t.steps.fromScratch}
+          </button>
+        )}
       </div>
       <div
         className="step-progress-pips"

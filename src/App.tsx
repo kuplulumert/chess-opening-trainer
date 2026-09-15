@@ -11,7 +11,7 @@ import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
 import { HomeScreen } from "./components/HomeScreen";
 import { TabBar } from "./components/TabBar";
-import { getAllProgress, recordReview, saveStepStage } from "./utils/storage";
+import { clearStepStage, getAllProgress, recordReview, saveStepStage } from "./utils/storage";
 import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
 import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
@@ -26,7 +26,7 @@ import {
 } from "./hooks/useStepSession";
 import { StepProgress } from "./components/StepProgress";
 import { StepBeat } from "./components/StepBeat";
-import { StepWelcome } from "./components/StepWelcome";
+import { ModeIntro } from "./components/ModeIntro";
 import "./App.css";
 
 // How long a finished Adım Adım run stays on its final position, under the
@@ -52,9 +52,9 @@ function App() {
   const [progress, setProgress] = useState(() => getAllProgress());
   const [extended, setExtended] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
-  // Line+side keys whose Adım Adım welcome card has been dismissed this
-  // session, so moving between lines doesn't bring it back each time.
-  const [welcomeSeen, setWelcomeSeen] = useState<ReadonlySet<string>>(() => new Set());
+  // Every opening starts under the mode card (see ModeIntro): picking a line
+  // raises it, picking a mode — on the card or in the header — clears it.
+  const [modeIntroOpen, setModeIntroOpen] = useState(true);
   const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
   const { theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
@@ -246,6 +246,7 @@ function App() {
       setSelectedId(id);
       setPlayerColor(side);
       setMode(progress[`${id}:${side}`]?.srs ? "quiz" : "steps");
+      setModeIntroOpen(true);
     },
     [progress],
   );
@@ -309,13 +310,36 @@ function App() {
 
   const handleGoToPractice = useCallback(() => setMode("quiz"), []);
 
-  // Starts over from move one on the way out: a Black line's opening move
-  // then plays where the trainee can see it, not under the welcome card.
-  const handleStartSteps = useCallback(() => {
-    const key = `${line.id}:${playerColor}`;
-    setWelcomeSeen((prev) => new Set(prev).add(key));
+  // A pick on the mode card starts the line over from move one either way —
+  // a new mode resets it by itself, the same one goes through restart — so a
+  // Black line's opening move plays where the trainee can see it, not under
+  // the card.
+  const handlePickMode = useCallback(
+    (next: TrainerMode) => {
+      setModeIntroOpen(false);
+      if (next === mode) handleRestart();
+      else setMode(next);
+    },
+    [mode, handleRestart],
+  );
+
+  const handleModeChange = useCallback((next: TrainerMode) => {
+    setModeIntroOpen(false);
+    setMode(next);
+  }, []);
+
+  // Back to stage one's intro run, whatever stage was reached. An unlearned
+  // line also forgets its saved stage, so it opens at stage one next time
+  // too; a learned one never saved any. A run that ended mid-beat is already
+  // in storage and stays there — only the run it would have led to is dropped.
+  const handleStepsFromScratch = useCallback(() => {
+    window.clearTimeout(stepTimerRef.current);
+    pendingStepRef.current = null;
+    clearStepStage(line.id, playerColor);
+    setProgress(getAllProgress());
+    steps.restart();
     trainer.reset();
-  }, [line.id, playerColor, trainer]);
+  }, [line.id, playerColor, steps, trainer]);
 
   // Same as picking from the list or the map: the point of choosing a line
   // is to go train it. Closing the finder without switching views dropped
@@ -346,6 +370,7 @@ function App() {
     setSelectedId(next.id);
     setPlayerColor(color);
     setMode("quiz");
+    setModeIntroOpen(true);
     setView("trainer");
   }, []);
 
@@ -395,16 +420,6 @@ function App() {
         ? t.steps.hintRunLabel
         : t.steps.repLabel(streak + 1, CLEAN_RUNS_TO_PASS);
   const stepRunLabel = steps.finished ? "" : runLabelFor(steps.phase, steps.streak);
-
-  // A line+side opened in Adım Adım with no record at all yet gets the rules
-  // first, over the board, before anything is played (see StepWelcome).
-  // Resuming at a later stage, or refreshing a learned line, skips it.
-  const showStepWelcome =
-    mode === "steps" &&
-    !lineProgress &&
-    steps.stage === 0 &&
-    !steps.finished &&
-    !welcomeSeen.has(`${line.id}:${playerColor}`);
 
   // What the card over the board says during the beat. `lineLearned` still
   // reads the pre-run state here: the finished run's record is in storage,
@@ -556,9 +571,12 @@ function App() {
               openingName={line.name}
               mode={mode}
               onColorChange={handleColorChange}
-              onModeChange={setMode}
-              canStepBack={trainer.canStepBack}
-              canStepForward={trainer.canStepForward}
+              onModeChange={handleModeChange}
+              // No stepping in Adım Adım: every run is judged as a whole, and
+              // forward on the trainee's turn would just hand them the move.
+              // The hint button stays for getting unstuck.
+              canStepBack={mode !== "steps" && trainer.canStepBack}
+              canStepForward={mode !== "steps" && trainer.canStepForward}
               t={t}
               onDrop={handleDrop}
               onStepBack={trainer.stepBack}
@@ -568,13 +586,17 @@ function App() {
               canHint={!trainer.isDone}
               onHint={trainer.requestHint}
               boardOverlay={
-                showStepWelcome ? (
-                  <StepWelcome
-                    title={t.steps.welcomeTitle}
-                    body={t.steps.welcomeBody(steps.stageCount)}
-                    steps={t.steps.welcomeSteps(CLEAN_RUNS_TO_PASS)}
-                    startLabel={t.steps.welcomeStart}
-                    onStart={handleStartSteps}
+                modeIntroOpen ? (
+                  <ModeIntro
+                    title={t.modeIntro.title}
+                    options={[
+                      { mode: "steps", name: t.stepsMode, description: t.modeIntro.steps },
+                      { mode: "quiz", name: t.quiz, description: t.modeIntro.quiz },
+                      { mode: "study", name: t.study, description: t.modeIntro.study },
+                    ]}
+                    recommended={lineLearned ? "quiz" : "steps"}
+                    recommendedLabel={t.modeIntro.recommended}
+                    onPick={handlePickMode}
                   />
                 ) : (
                   stepBeat && (
@@ -598,6 +620,9 @@ function App() {
                   runLabel={stepRunLabel}
                   finished={steps.finished}
                   status={stepStatus}
+                  // Hidden at the very start, where there's nothing to undo.
+                  canStartOver={steps.finished || steps.stage > 0 || steps.phase !== "intro"}
+                  onStartOver={handleStepsFromScratch}
                   t={t}
                 />
               )}

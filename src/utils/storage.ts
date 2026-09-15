@@ -56,6 +56,22 @@ export function saveStepStage(lineId: string, color: "w" | "b", stage: number): 
 }
 
 /**
+ * Adım Adım's "start from scratch": forgets the stage this line+side
+ * reached, so it opens at stage one again. Everything else in the record
+ * stays, and a record with no stage saved isn't touched at all.
+ */
+export function clearStepStage(lineId: string, color: "w" | "b"): void {
+  const map = loadAll();
+  const k = key(lineId, color);
+  const record = map[k];
+  if (record?.stepStage === undefined) return;
+  const next = { ...record };
+  delete next.stepStage;
+  map[k] = next;
+  saveAll(map);
+}
+
+/**
  * Records one quiz-mode completion: bumps the medal-tier completion count
  * (unchanged, cosmetic) and, in the same read-modify-write, feeds the run's
  * outcome into the SM-2 scheduler so the line gets a real next-due date
