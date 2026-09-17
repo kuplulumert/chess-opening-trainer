@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Chess, type Square } from "chess.js";
 import { Chessboard, type PieceDropHandlerArgs, type SquareHandlerArgs } from "react-chessboard";
 import type { PlayerColor, TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { preloadMoveSound } from "../utils/sound";
-import { isTouchDebugEnabled, setTouchDebugEnabled } from "../utils/touchDebug";
+import { isTouchDebugEnabled } from "../utils/touchDebug";
 import { TouchDebug } from "./TouchDebug";
 
 interface BoardPanelProps {
@@ -29,6 +29,8 @@ interface BoardPanelProps {
   onStepForward: () => void;
   onRestart: () => void;
   onHint: () => void;
+  /** The opening name is the way into the openings list. */
+  onOpenList: () => void;
   /** Rendered under the toolbar, inside the board's own column. */
   children?: React.ReactNode;
   /** Laid over the board itself — Adım Adım's between-runs card. */
@@ -62,6 +64,7 @@ export function BoardPanel({
   onStepForward,
   onRestart,
   onHint,
+  onOpenList,
   children,
   boardOverlay,
 }: BoardPanelProps) {
@@ -72,19 +75,10 @@ export function BoardPanel({
     preloadMoveSound();
   }, []);
 
-  // Temporary: 5 quick taps on the opening name toggles the on-device
-  // touch diagnostics (see TouchDebug).
-  const [touchDebug, setTouchDebug] = useState(isTouchDebugEnabled);
-  const nameTaps = useRef<number[]>([]);
-  function handleNameTap(): void {
-    const now = Date.now();
-    nameTaps.current = [...nameTaps.current.filter((at) => now - at < 3000), now];
-    if (nameTaps.current.length < 5) return;
-    nameTaps.current = [];
-    const next = !touchDebug;
-    setTouchDebugEnabled(next);
-    setTouchDebug(next);
-  }
+  // The diagnostics panel is switched on from Settings now (five taps on
+  // its title); this only reads the flag, which frees the opening name to
+  // be the way into the openings list.
+  const [touchDebug] = useState(isTouchDebugEnabled);
 
   // Tap-to-move selection: touching a piece picks it up, touching a second
   // square plays it there. Cleared on every new position (a fresh move, a
@@ -166,8 +160,31 @@ export function BoardPanel({
           used to sit in their own labelled block below the board, which
           cost a whole row of vertical space the board needs. */}
       <div className="board-header">
-        <h2 className="board-opening-name" onClick={handleNameTap}>
-          {openingName}
+        <h2 className="board-opening-name">
+          <button
+            type="button"
+            className="board-opening-button"
+            onClick={onOpenList}
+            title={t.map.openingsNavLabel}
+          >
+            <span className="board-opening-text">{openingName}</span>
+            <svg
+              className="board-opening-chevron"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              aria-hidden="true"
+            >
+              <path
+                d="m9 18 6-6-6-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </h2>
         {/* Plain text toggles rather than boxed segmented controls: the
             boxes' borders and padding cost ~90px, which is the difference
@@ -199,7 +216,13 @@ export function BoardPanel({
               stays at the header's 11px. */}
           <span className="mini-select">
             <span aria-hidden="true">
-              {mode === "steps" ? t.stepsMode : mode === "quiz" ? t.quiz : t.study}
+              {mode === "steps"
+                ? t.stepsMode
+                : mode === "stepsPlus"
+                  ? t.stepsPlusMode
+                  : mode === "quiz"
+                    ? t.quiz
+                    : t.study}
             </span>
             <select
               className="mini-select-native"
@@ -208,6 +231,7 @@ export function BoardPanel({
               onChange={(event) => onModeChange(event.target.value as TrainerMode)}
             >
               <option value="steps">{t.stepsMode}</option>
+              <option value="stepsPlus">{t.stepsPlusMode}</option>
               <option value="quiz">{t.quiz}</option>
               <option value="study">{t.study}</option>
             </select>

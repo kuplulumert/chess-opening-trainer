@@ -5,10 +5,17 @@ import { hapticError, hapticMove, hapticSuccess } from "../utils/native";
 import { playMoveSound } from "../utils/sound";
 
 export type PlayerColor = "w" | "b";
-// "steps" is Adım Adım: Practice rules, except that the plies passed in as
-// `shownPlies` get their move shown the way Study shows every move — see
-// useStepSession for which ones and why.
-export type TrainerMode = "quiz" | "study" | "steps";
+// "steps" and "stepsPlus" are the two Adım Adım modes: Practice rules,
+// except that the plies passed in as `shownPlies` get their move shown the
+// way Study shows every move — see useStepSession for which ones and why.
+// "steps" also starts its runs partway into the line (`startPly`), so a run
+// is one chunk rather than the whole thing.
+export type TrainerMode = "quiz" | "study" | "steps" | "stepsPlus";
+
+/** Both Adım Adım modes — nearly everything treats them alike. */
+export function isStepMode(mode: TrainerMode): mode is "steps" | "stepsPlus" {
+  return mode === "steps" || mode === "stepsPlus";
+}
 export type MoveFeedback = "idle" | "correct" | "wrong";
 
 const OPPONENT_MOVE_DELAY_MS = 550;
@@ -43,9 +50,12 @@ export function useOpeningTrainer(
   playerColor: PlayerColor,
   mode: TrainerMode,
   shownPlies?: ReadonlySet<number>,
+  /** Plies already on the board when a run starts — Adım Adım's chunked
+   *  mode drills from where the stage begins, not from move one. */
+  startPly = 0,
 ) {
-  const [game, setGame] = useState(() => new Chess());
-  const [moveIndex, setMoveIndex] = useState(0);
+  const [game, setGame] = useState(() => positionAfter(line.moves, startPly));
+  const [moveIndex, setMoveIndex] = useState(startPly);
   const [feedback, setFeedback] = useState<MoveFeedback>("idle");
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [lastWrongSquares, setLastWrongSquares] = useState<{ from: Square; to: Square } | null>(
@@ -70,12 +80,12 @@ export function useOpeningTrainer(
   // Reset synchronously when the line, colour, or mode changes, rather than in an
   // effect: an effect resets one render too late, so consumers would briefly still
   // see the finished state of the *previous* run under the new line/colour.
-  const runKey = `${line.id}:${playerColor}:${mode}`;
+  const runKey = `${line.id}:${playerColor}:${mode}:${startPly}`;
   const [activeRunKey, setActiveRunKey] = useState(runKey);
   if (activeRunKey !== runKey) {
     setActiveRunKey(runKey);
-    setGame(new Chess());
-    setMoveIndex(0);
+    setGame(positionAfter(line.moves, startPly));
+    setMoveIndex(startPly);
     setFeedback("idle");
     setWrongAttempts(0);
     setLastWrongSquares(null);
@@ -109,8 +119,8 @@ export function useOpeningTrainer(
 
   const reset = useCallback(() => {
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-    setGame(new Chess());
-    setMoveIndex(0);
+    setGame(positionAfter(line.moves, startPly));
+    setMoveIndex(startPly);
     setFeedback("idle");
     setWrongAttempts(0);
     setLastWrongSquares(null);
@@ -118,7 +128,7 @@ export function useOpeningTrainer(
     setMistakeCount(0);
     setHintUsedInRun(false);
     setMissedPlies([]);
-  }, []);
+  }, [line.moves, startPly]);
 
   // Auto-play only the opponent's book moves — in both modes, the trainee
   // always plays their own chosen color's moves themselves.
@@ -171,7 +181,7 @@ export function useOpeningTrainer(
   // ply: landing on the opponent's turn instead would have the auto-reply
   // effect immediately re-play the very move that was just undone.
   const firstPlayerPly = playerColor === "w" ? 0 : 1;
-  const canStepBack = moveIndex > firstPlayerPly;
+  const canStepBack = moveIndex > Math.max(firstPlayerPly, startPly);
   const canStepForward = !isDone;
 
   const stepBack = useCallback(() => {

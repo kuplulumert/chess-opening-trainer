@@ -6,6 +6,7 @@ import {
 } from "../data/skillMap";
 import { getDueLines } from "../data/dueLines";
 import type { OpeningLine } from "../data/openings";
+import { lineTitle } from "../data/lineTitle";
 import type { LineProgress } from "../utils/storage";
 import type { PlayerColor } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
@@ -65,7 +66,7 @@ export function SkillMap({ openings, progress, t, onTrainLine, onReviewDue }: Sk
                 onClick={() => onReviewDue(line, color)}
               >
                 <span className="due-review-eco">{line.eco}</span>
-                <span className="due-review-name">{line.name}</span>
+                <span className="due-review-name">{lineTitle(line)}</span>
                 <span className="due-review-side">{color === "w" ? t.white : t.black}</span>
                 <span className="due-review-days">{t.map.dueDaysLabel(daysOverdue)}</span>
               </button>

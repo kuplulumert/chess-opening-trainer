@@ -21,6 +21,9 @@ interface HomeScreenProps {
   onToggleTheme: () => void;
   onOpenFinder: () => void;
   onStartTrainer: () => void;
+  onOpenMyOpenings: () => void;
+  /** Names of the openings already picked, for the card's hint line. */
+  favouriteNames: string[];
   remindersEnabled: boolean;
   onToggleReminders: () => Promise<ReminderToggleResult>;
 }
@@ -33,6 +36,8 @@ export function HomeScreen({
   onToggleTheme,
   onOpenFinder,
   onStartTrainer,
+  onOpenMyOpenings,
+  favouriteNames,
   remindersEnabled,
   onToggleReminders,
 }: HomeScreenProps) {
@@ -118,6 +123,21 @@ export function HomeScreen({
             <span className="home-action-label">{t.home.startTrainer}</span>
           </span>
           <span className="home-action-hint">{t.home.startTrainerHint}</span>
+        </button>
+        {/* Straight to the two lines being drilled — on most days that's the
+            reason the app is being opened at all. */}
+        <button type="button" className="home-action-card" onClick={onOpenMyOpenings}>
+          <span className="home-action-title-row">
+            <img
+              src={`${import.meta.env.BASE_URL}openings-icon.png`}
+              alt=""
+              className="home-action-icon"
+            />
+            <span className="home-action-label">{t.myOpenings.navLabel}</span>
+          </span>
+          <span className="home-action-hint">
+            {favouriteNames.length > 0 ? favouriteNames.join(" · ") : t.myOpenings.homeHintEmpty}
+          </span>
         </button>
         <button type="button" className="home-finder-trigger" onClick={onOpenFinder}>
           {t.finder.trigger}

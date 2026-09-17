@@ -1,0 +1,131 @@
+.my-openings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  animation: screen-enter 220ms ease-out both;
+}
+
+.my-openings-head {
+  margin-bottom: 2px;
+}
+
+.my-openings-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-h);
+}
+
+.my-openings-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.my-openings-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-openings-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+}
+
+/* The card itself is the "train this" button; the × beside it is the only
+   other thing that can be hit. */
+.my-openings-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.my-openings-card-eco {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.my-openings-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.my-openings-card-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.my-openings-remove {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (hover: hover) {
+  .my-openings-remove:hover {
+    background: var(--accent-bg);
+    color: var(--text-h);
+  }
+}
+
+/* A dashed slot reads as "there's room here" rather than as a card that
+   failed to load. */
+.my-openings-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 18px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .my-openings-empty:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.my-openings-plus {
+  font-size: 18px;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-openings {
+    animation: none;
+  }
+}

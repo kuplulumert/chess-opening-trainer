@@ -3,6 +3,7 @@ import type { Square } from "chess.js";
 import { openings as openingsEn, type OpeningLine } from "./data/openings";
 import { getLocalizedOpenings } from "./data/localize";
 import { sideOf } from "./data/side";
+import { lineTitle } from "./data/lineTitle";
 import { Sidebar } from "./components/Sidebar";
 import { HowToUseBanner } from "./components/HowToUseBanner";
 import { BoardPanel } from "./components/BoardPanel";
@@ -10,20 +11,31 @@ import { InfoPanel } from "./components/InfoPanel";
 import { OpeningFinder } from "./components/OpeningFinder";
 import { SkillMap } from "./components/SkillMap";
 import { HomeScreen } from "./components/HomeScreen";
+import { SettingsScreen } from "./components/SettingsScreen";
+import { MyOpenings } from "./components/MyOpenings";
+import { OpeningPickerModal } from "./components/OpeningPickerModal";
 import { TabBar } from "./components/TabBar";
-import { clearStepStage, getAllProgress, recordReview, saveStepStage } from "./utils/storage";
-import { useOpeningTrainer, type PlayerColor, type TrainerMode } from "./hooks/useOpeningTrainer";
+import {
+  clearStepStage,
+  getAllProgress,
+  recordReview,
+  saveStepStage,
+  saveStepsDone,
+  type LineProgress,
+} from "./utils/storage";
+import { getFavourites, MAX_FAVOURITES, saveFavourites } from "./utils/favourites";
+import {
+  isStepMode,
+  useOpeningTrainer,
+  type PlayerColor,
+  type TrainerMode,
+} from "./hooks/useOpeningTrainer";
 import { hideSplash } from "./utils/native";
 import { useTheme } from "./hooks/useTheme";
 import { useLanguage } from "./hooks/useLanguage";
 import { useReminders } from "./hooks/useReminders";
 import { syncReviewReminder } from "./utils/notifications";
-import {
-  CLEAN_RUNS_TO_PASS,
-  useStepSession,
-  type StepPhase,
-  type StepSessionState,
-} from "./hooks/useStepSession";
+import { useStepSession, type StepPhase, type StepSessionState } from "./hooks/useStepSession";
 import { StepProgress } from "./components/StepProgress";
 import { StepBeat } from "./components/StepBeat";
 import { ModeIntro } from "./components/ModeIntro";
@@ -41,13 +53,20 @@ interface PendingStep {
   progressChanged: boolean;
 }
 
+// Which mode a line+side opens in: the chunked Adım Adım until it has been
+// through its stages, Practice after — including lines with an SRS record
+// from before the mode existed, so nobody's progress is sent back to stage
+// one. "+" is never automatic; it's there when the full replays are wanted.
+function openingMode(record?: LineProgress): TrainerMode {
+  return record?.srs || record?.stepsDone ? "quiz" : "steps";
+}
+
 function App() {
   const [selectedId, setSelectedId] = useState(openingsEn[0].id);
   const [playerColor, setPlayerColor] = useState<PlayerColor>("w");
-  // Opens the way selectOpening would: Adım Adım until the line is learned
-  // on that side, Practice after.
+  // Opens the way selectOpening would — see openingMode.
   const [mode, setMode] = useState<TrainerMode>(() =>
-    getAllProgress()[`${openingsEn[0].id}:w`]?.srs ? "quiz" : "steps",
+    openingMode(getAllProgress()[`${openingsEn[0].id}:w`]),
   );
   const [progress, setProgress] = useState(() => getAllProgress());
   const [extended, setExtended] = useState(false);
@@ -55,13 +74,27 @@ function App() {
   // Every opening starts under the mode card (see ModeIntro): picking a line
   // raises it, picking a mode — on the card or in the header — clears it.
   const [modeIntroOpen, setModeIntroOpen] = useState(true);
-  const [view, setView] = useState<"home" | "trainer" | "openings" | "map">("home");
+  const [view, setView] = useState<
+    "home" | "trainer" | "openings" | "map" | "settings" | "my"
+  >("home");
+  // Home's two quick-access openings — see MyOpenings.
+  const [favourites, setFavourites] = useState<string[]>(getFavourites);
+  // The board's opening name opens this list over the board. It used to
+  // swap the whole screen for the openings tab, which left a mis-tap with
+  // no way back; a modal has a × and a backdrop.
+  const [listOpen, setListOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
   const { remindersEnabled, toggleReminders } = useReminders();
 
   const openings = useMemo(() => getLocalizedOpenings(language), [language]);
   const line = openings.find((o) => o.id === selectedId) ?? openings[0];
+  // Home lists the picked openings by family, in the language on screen:
+  // ten lines are called "Main line", so the variation name on its own
+  // would have Home reading "Main line · Main line".
+  const favouriteNames = favourites
+    .map((id) => openings.find((o) => o.id === id)?.family)
+    .filter((name): name is string => Boolean(name));
 
   // A fresh run (new opening, new color, or new mode) always starts at the
   // base depth; the trainee re-opts into the extension each time. Reset
@@ -84,7 +117,7 @@ function App() {
   const steps = useStepSession(
     line,
     playerColor,
-    mode === "steps",
+    mode,
     lineLearned ? 0 : (lineProgress?.stepStage ?? 0),
   );
 
@@ -94,7 +127,7 @@ function App() {
   // useOpeningTrainer picks up right where it left off instead of resetting.
   // In Adım Adım a run is only the current stage's share of the line.
   const activeLine = useMemo(() => {
-    if (mode === "steps") return steps.line;
+    if (isStepMode(mode)) return steps.line;
     if (!extended || !line.extension) return line;
     return {
       ...line,
@@ -108,7 +141,8 @@ function App() {
     activeLine,
     playerColor,
     mode,
-    mode === "steps" ? steps.shownPlies : undefined,
+    isStepMode(mode) ? steps.shownPlies : undefined,
+    steps.startPly,
   );
 
   // Record a completion once per run-through of a line, not once per
@@ -153,7 +187,7 @@ function App() {
   }, [applyStep, resetBoard]);
 
   useEffect(() => {
-    if (mode !== "steps") return;
+    if (!isStepMode(mode)) return;
     if (!isDone) {
       stepJudgedRef.current = false;
       return;
@@ -168,17 +202,27 @@ function App() {
     // record alone.
     let progressChanged = false;
     if (!lineLearned && outcome === "finished") {
-      recordReview(line.id, playerColor, 0, false);
+      // "+" ends on a full-line recall run, so finishing it is the line's
+      // first completion and first review. The chunked mode never replays
+      // from the start, so it only records that its stages are done —
+      // Practice is what turns that into a learned line.
+      if (mode === "stepsPlus") recordReview(line.id, playerColor, 0, false);
+      else saveStepsDone(line.id, playerColor);
       progressChanged = true;
     } else if (!lineLearned && outcome === "stagePassed") {
       saveStepStage(line.id, playerColor, next.stage);
       progressChanged = true;
     }
     pendingStepRef.current = {
-      next: outcome === "finished" ? { ...next, learnedNow: !lineLearned } : next,
+      next:
+        outcome === "finished"
+          ? { ...next, learnedNow: !lineLearned && mode === "stepsPlus" }
+          : next,
       // A finish has no next run: the board stays on the final position
-      // under the finish card.
-      resetBoard: outcome !== "finished",
+      // under the finish card. A passed stage in the chunked mode carries
+      // on from where it is — the next stage's startPly is the position
+      // already on the board, so resetting would only rewind it.
+      resetBoard: outcome !== "finished" && !(mode === "steps" && outcome === "stagePassed"),
       progressChanged,
     };
     stepTimerRef.current = window.setTimeout(flushPendingStep, STEP_RUN_PAUSE_MS);
@@ -245,7 +289,7 @@ function App() {
       const side = sideOf(id);
       setSelectedId(id);
       setPlayerColor(side);
-      setMode(progress[`${id}:${side}`]?.srs ? "quiz" : "steps");
+      setMode(openingMode(progress[`${id}:${side}`]));
       setModeIntroOpen(true);
     },
     [progress],
@@ -258,7 +302,7 @@ function App() {
     (color: PlayerColor) => {
       setPlayerColor(color);
       setMode((current) =>
-        current === "study" ? current : progress[`${selectedId}:${color}`]?.srs ? "quiz" : "steps",
+        current === "study" ? current : openingMode(progress[`${selectedId}:${color}`]),
       );
     },
     [progress, selectedId],
@@ -287,7 +331,7 @@ function App() {
 
   const handleRestart = useCallback(() => {
     setExtended(false);
-    if (mode === "steps") {
+    if (isStepMode(mode)) {
       const pending = pendingStepRef.current;
       if (pending) {
         // Mid-beat: that run already finished and was judged — keep it. If
@@ -362,6 +406,22 @@ function App() {
     [selectOpening],
   );
 
+  const handleAddFavourite = useCallback((id: string) => {
+    setFavourites((prev) => {
+      const next = prev.includes(id) ? prev : [...prev, id].slice(0, MAX_FAVOURITES);
+      saveFavourites(next);
+      return next;
+    });
+  }, []);
+
+  const handleRemoveFavourite = useCallback((id: string) => {
+    setFavourites((prev) => {
+      const next = prev.filter((favourite) => favourite !== id);
+      saveFavourites(next);
+      return next;
+    });
+  }, []);
+
   // A due-review pick names its own color explicitly (the side that was
   // actually quizzed) rather than deferring to selectOpening's family
   // default, and forces Quiz mode — landing in Study wouldn't test recall
@@ -377,7 +437,7 @@ function App() {
   // During the beat between runs, the result on screen is the finished run
   // judged again here — pure, nothing stored — so it can't drift from the
   // step the timer is about to apply.
-  const beat = mode === "steps" && isDone && !steps.finished ? judgeRun(missedPlies) : null;
+  const beat = isStepMode(mode) && isDone && !steps.finished ? judgeRun(missedPlies) : null;
   const beatFlash = beat && {
     text:
       beat.outcome === "failed"
@@ -386,15 +446,15 @@ function App() {
           ? t.steps.uncountedFlash
           : beat.outcome === "stagePassed"
             ? t.steps.stagePassedFlash
-            : t.steps.cleanFlash(beat.next.streak, CLEAN_RUNS_TO_PASS),
+            : t.steps.cleanFlash(beat.next.streak, steps.runsToPass),
     // A passed stage lights all its dots for the beat before they reset.
-    streak: beat.outcome === "stagePassed" ? CLEAN_RUNS_TO_PASS : beat.next.streak,
+    streak: beat.outcome === "stagePassed" ? steps.runsToPass : beat.next.streak,
   };
   // A mistake in a counting run drops the streak on screen right away, not
   // only once the run ends — that's when the trainee needs to know.
   const liveMistake = steps.phase === "recall" && missedPlies.length > 0;
   const shownStreak = steps.finished
-    ? CLEAN_RUNS_TO_PASS
+    ? steps.runsToPass
     : beatFlash
       ? beatFlash.streak
       : liveMistake
@@ -404,12 +464,12 @@ function App() {
     ? ""
     : (beatFlash?.text ??
       (steps.phase === "intro"
-        ? t.steps.introStatus(CLEAN_RUNS_TO_PASS)
+        ? t.steps.introStatus(steps.runsToPass, mode === "stepsPlus")
         : steps.phase === "hint"
           ? t.steps.hintStatus
           : liveMistake
             ? t.steps.mistakeStatus
-            : t.steps.recallStatus(CLEAN_RUNS_TO_PASS)));
+            : t.steps.recallStatus(steps.runsToPass)));
 
   // The run in progress, named on screen at every moment — the difference
   // between "rep 2 of 3" and the board inexplicably starting over.
@@ -418,8 +478,16 @@ function App() {
       ? t.steps.introRunLabel
       : phase === "hint"
         ? t.steps.hintRunLabel
-        : t.steps.repLabel(streak + 1, CLEAN_RUNS_TO_PASS);
+        : t.steps.repLabel(streak + 1, steps.runsToPass);
   const stepRunLabel = steps.finished ? "" : runLabelFor(steps.phase, steps.streak);
+
+  // Which finish card the info panel shows. The chunked mode's finish is
+  // not a learned line: its runs never covered the line from the start.
+  const stepsOutcome = steps.learnedNow
+    ? ("learned" as const)
+    : mode === "steps" && !lineLearned
+      ? ("done" as const)
+      : ("refreshed" as const);
 
   // What the card over the board says during the beat. `lineLearned` still
   // reads the pre-run state here: the finished run's record is in storage,
@@ -427,11 +495,17 @@ function App() {
   const stepBeat = !beat
     ? null
     : beat.outcome === "finished"
-      ? {
-          tone: "done" as const,
-          title: t.steps.beatFinished(!lineLearned),
-          detail: t.steps.beatFinishedDetail(!lineLearned),
-        }
+      ? mode === "steps" && !lineLearned
+        ? {
+            tone: "done" as const,
+            title: t.steps.beatStepsDone,
+            detail: t.steps.beatStepsDoneDetail,
+          }
+        : {
+            tone: "done" as const,
+            title: t.steps.beatFinished(!lineLearned),
+            detail: t.steps.beatFinishedDetail(!lineLearned),
+          }
       : beat.outcome === "stagePassed"
         ? {
             tone: "done" as const,
@@ -443,17 +517,23 @@ function App() {
               tone: "warn" as const,
               title: t.steps.beatFailed,
               detail: t.steps.beatFailedDetail,
-              next: t.steps.beatNext(runLabelFor(beat.next.phase, beat.next.streak)),
+              next: t.steps.beatNext(
+                runLabelFor(beat.next.phase, beat.next.streak),
+                mode === "stepsPlus",
+              ),
             }
           : {
               tone: "good" as const,
               title:
                 beat.outcome === "clean"
-                  ? t.steps.beatClean(beat.next.streak, CLEAN_RUNS_TO_PASS)
+                  ? t.steps.beatClean(beat.next.streak, steps.runsToPass)
                   : steps.phase === "hint"
                     ? t.steps.beatHintDone
                     : t.steps.beatIntroDone,
-              next: t.steps.beatNext(runLabelFor(beat.next.phase, beat.next.streak)),
+              next: t.steps.beatNext(
+                runLabelFor(beat.next.phase, beat.next.streak),
+                mode === "stepsPlus",
+              ),
             };
 
   return (
@@ -507,6 +587,26 @@ function App() {
               />
               {t.map.navLabel}
             </button>
+            <button
+              type="button"
+              className={view === "settings" ? "view-switcher-active" : ""}
+              onClick={() => setView("settings")}
+            >
+              <svg
+                className="view-switcher-tab-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="3.2" />
+                <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.2-2.1.8a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.4 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.1-.8-1.9 3.2 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.2 2.1-.8a7.6 7.6 0 0 0 2.6 1.5l.4 2.2h4.4l.4-2.2a7.6 7.6 0 0 0 2.6-1.5l2.1.8 1.9-3.2z" />
+              </svg>
+              {t.settings.navLabel}
+            </button>
           </div>
         </div>
       )}
@@ -520,6 +620,8 @@ function App() {
           onToggleTheme={toggleTheme}
           onOpenFinder={() => setFinderOpen(true)}
           onStartTrainer={() => setView("trainer")}
+          onOpenMyOpenings={() => setView("my")}
+          favouriteNames={favouriteNames}
           remindersEnabled={remindersEnabled}
           onToggleReminders={toggleReminders}
         />
@@ -530,6 +632,25 @@ function App() {
           t={t}
           onTrainLine={handleMapSelect}
           onReviewDue={handleReviewDue}
+        />
+      ) : view === "settings" ? (
+        <SettingsScreen
+          t={t}
+          language={language}
+          onSelectLanguage={setLanguage}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          remindersEnabled={remindersEnabled}
+          onToggleReminders={toggleReminders}
+        />
+      ) : view === "my" ? (
+        <MyOpenings
+          openings={openings}
+          favouriteIds={favourites}
+          t={t}
+          onTrain={handleMapSelect}
+          onAdd={handleAddFavourite}
+          onRemove={handleRemoveFavourite}
         />
       ) : (
         <div className="app-shell" data-mobile-view={view}>
@@ -568,20 +689,21 @@ function App() {
               feedback={trainer.feedback}
               lastWrongSquares={trainer.lastWrongSquares}
               hintSan={trainer.revealedHint}
-              openingName={line.name}
+              openingName={lineTitle(line)}
               mode={mode}
               onColorChange={handleColorChange}
               onModeChange={handleModeChange}
               // No stepping in Adım Adım: every run is judged as a whole, and
               // forward on the trainee's turn would just hand them the move.
               // The hint button stays for getting unstuck.
-              canStepBack={mode !== "steps" && trainer.canStepBack}
-              canStepForward={mode !== "steps" && trainer.canStepForward}
+              canStepBack={!isStepMode(mode) && trainer.canStepBack}
+              canStepForward={!isStepMode(mode) && trainer.canStepForward}
               t={t}
               onDrop={handleDrop}
               onStepBack={trainer.stepBack}
               onStepForward={trainer.stepForward}
               onRestart={handleRestart}
+              onOpenList={() => setListOpen(true)}
               hintVisible={mode !== "study"}
               canHint={!trainer.isDone}
               onHint={trainer.requestHint}
@@ -591,10 +713,15 @@ function App() {
                     title={t.modeIntro.title}
                     options={[
                       { mode: "steps", name: t.stepsMode, description: t.modeIntro.steps },
+                      {
+                        mode: "stepsPlus",
+                        name: t.stepsPlusMode,
+                        description: t.modeIntro.stepsPlus,
+                      },
                       { mode: "quiz", name: t.quiz, description: t.modeIntro.quiz },
                       { mode: "study", name: t.study, description: t.modeIntro.study },
                     ]}
-                    recommended={lineLearned ? "quiz" : "steps"}
+                    recommended={openingMode(lineProgress)}
                     recommendedLabel={t.modeIntro.recommended}
                     onPick={handlePickMode}
                   />
@@ -610,13 +737,13 @@ function App() {
                 )
               }
             >
-              {mode === "steps" && (
+              {isStepMode(mode) && (
                 <StepProgress
                   stage={steps.stage}
                   stageCount={steps.stageCount}
                   showsMoves={!steps.finished && steps.phase !== "recall"}
                   cleanRuns={shownStreak}
-                  runsToPass={CLEAN_RUNS_TO_PASS}
+                  runsToPass={steps.runsToPass}
                   runLabel={stepRunLabel}
                   finished={steps.finished}
                   status={stepStatus}
@@ -634,7 +761,7 @@ function App() {
             isDone={trainer.isDone}
             currentComment={trainer.currentComment}
             isPlayerTurn={trainer.isPlayerTurn}
-            canExtend={mode !== "steps" && Boolean(line.extension) && !extended}
+            canExtend={!isStepMode(mode) && Boolean(line.extension) && !extended}
             whiteStrategy={trainer.whiteStrategy}
             blackStrategy={trainer.blackStrategy}
             t={t}
@@ -642,7 +769,7 @@ function App() {
             onNextLine={handleNextLine}
             onExtend={handleExtend}
             stepsFinished={steps.finished}
-            stepsLearnedNow={steps.learnedNow}
+            stepsOutcome={stepsOutcome}
             onGoToPractice={handleGoToPractice}
           />
         </div>
@@ -661,6 +788,18 @@ function App() {
           t={t}
           onSelect={handleFinderSelect}
           onClose={() => setFinderOpen(false)}
+        />
+      )}
+
+      {listOpen && (
+        <OpeningPickerModal
+          openings={openings}
+          t={t}
+          onPick={(next) => {
+            selectOpening(next.id);
+            setListOpen(false);
+          }}
+          onClose={() => setListOpen(false)}
         />
       )}
     </>

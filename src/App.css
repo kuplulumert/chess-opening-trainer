@@ -368,6 +368,37 @@
   white-space: nowrap;
 }
 
+/* The name is also the way into the openings list: it is what a trainee
+   reaches for first when they want a different line. */
+.board-opening-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.board-opening-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-opening-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+@media (hover: hover) {
+  .board-opening-button:hover .board-opening-chevron {
+    color: var(--accent);
+  }
+}
+
 .board-header-settings {
   display: flex;
   gap: 4px;
@@ -1271,7 +1302,9 @@ button + .segmented-active {
   }
 
   .app-shell,
-  .skill-map {
+  .skill-map,
+  .settings-screen,
+  .my-openings {
     padding-bottom: calc(var(--tab-bar-h) + 8px);
   }
 

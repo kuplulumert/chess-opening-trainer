@@ -1,6 +1,10 @@
 import type { Dictionary } from "../i18n/translations";
 
-export type View = "home" | "trainer" | "openings" | "map";
+export type View = "home" | "trainer" | "openings" | "map" | "settings" | "my";
+
+/** The views with a tab of their own. My openings is reached from Home, so
+ *  it simply leaves every tab inactive. */
+type TabId = Exclude<View, "my">;
 
 interface TabBarProps {
   view: View;
@@ -12,7 +16,7 @@ interface TabBarProps {
 // CSS decides which one shows). Monochrome line glyphs tinted by state,
 // the way a native tab bar reads — the gold artwork stays on the home
 // cards and page heroes where there's room for it.
-const ICONS: Record<View, React.ReactNode> = {
+const ICONS: Record<TabId, React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
   trainer: (
     <>
@@ -33,14 +37,21 @@ const ICONS: Record<View, React.ReactNode> = {
       <path d="M9 3v15M15 6v15" />
     </>
   ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.2-2.1.8a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.4 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.1-.8-1.9 3.2 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.2 2.1-.8a7.6 7.6 0 0 0 2.6 1.5l.4 2.2h4.4l.4-2.2a7.6 7.6 0 0 0 2.6-1.5l2.1.8 1.9-3.2z" />
+    </>
+  ),
 };
 
 export function TabBar({ view, t, onChange }: TabBarProps) {
-  const tabs: Array<{ id: View; label: string }> = [
+  const tabs: Array<{ id: TabId; label: string }> = [
     { id: "home", label: t.home.navLabel },
     { id: "trainer", label: t.map.trainerNavLabel },
     { id: "openings", label: t.map.openingsNavLabel },
     { id: "map", label: t.map.navLabel },
+    { id: "settings", label: t.settings.navLabel },
   ];
 
   return (

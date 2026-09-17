@@ -14,6 +14,12 @@ export interface LineProgress {
    *  means anything within one sitting. Gone once the line is learned:
    *  recordReview rewrites the record without it. */
   stepStage?: number;
+  /** Adım Adım's chunked mode has been through every stage of this
+   *  line+side. Not the same as learned: its runs are single chunks, never
+   *  the line from the start, so this only routes the next visit to
+   *  Practice. Gone once the line is learned — recordReview rewrites the
+   *  record without it. */
+  stepsDone?: boolean;
 }
 
 type ProgressMap = Record<string, LineProgress>;
@@ -55,18 +61,28 @@ export function saveStepStage(lineId: string, color: "w" | "b", stage: number): 
   saveAll(map);
 }
 
+/** Adım Adım's chunked mode is through every stage of this line+side. */
+export function saveStepsDone(lineId: string, color: "w" | "b"): void {
+  const map = loadAll();
+  const k = key(lineId, color);
+  map[k] = { ...(map[k] ?? { completions: 0, lastCompletedAt: null }), stepsDone: true };
+  saveAll(map);
+}
+
 /**
  * Adım Adım's "start from scratch": forgets the stage this line+side
- * reached, so it opens at stage one again. Everything else in the record
- * stays, and a record with no stage saved isn't touched at all.
+ * reached and that its stages were ever finished, so it opens at stage one
+ * again. Everything else in the record stays, and a record with neither
+ * saved isn't touched at all.
  */
 export function clearStepStage(lineId: string, color: "w" | "b"): void {
   const map = loadAll();
   const k = key(lineId, color);
   const record = map[k];
-  if (record?.stepStage === undefined) return;
+  if (record?.stepStage === undefined && record?.stepsDone === undefined) return;
   const next = { ...record };
   delete next.stepStage;
+  delete next.stepsDone;
   map[k] = next;
   saveAll(map);
 }

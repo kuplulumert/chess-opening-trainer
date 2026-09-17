@@ -1,0 +1,60 @@
+/* Sits in the finder's overlay and panel, so the app has one kind of modal. */
+.opening-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.opening-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.opening-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-h);
+  font-size: 13.5px;
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .opening-picker-item:hover {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+}
+
+/* Family over variation: the variation alone is "Main line" on ten of
+   them, which told the reader nothing. */
+.opening-picker-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.opening-picker-family {
+  font-weight: 600;
+}
+
+.opening-picker-name {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.opening-picker-side {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}

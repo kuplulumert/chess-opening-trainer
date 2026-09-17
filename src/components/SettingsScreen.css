@@ -1,0 +1,75 @@
+.settings-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  animation: screen-enter 220ms ease-out both;
+}
+
+.settings-head {
+  margin-bottom: 2px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-h);
+}
+
+.settings-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Text left, control right — and on a narrow phone the control drops to
+   its own line rather than squeezing the label. */
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+}
+
+.settings-row-text {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.settings-row-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.settings-row-hint {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.settings-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-screen {
+    animation: none;
+  }
+}
+
+/* .secondary-button stretches inside a flex row by default; here it sits
+   beside its label on one line instead of swallowing the row. */
+.settings-row .secondary-button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  white-space: nowrap;
+}

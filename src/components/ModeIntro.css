@@ -12,26 +12,28 @@
   animation: step-beat-fade 160ms ease-out both;
 }
 
-/* A phone board is only ~335px tall, so this stays compact — and scrolls
-   inside itself rather than getting cut off if it ever doesn't fit. */
+/* A phone board is only ~335px tall and this lists every mode, so it's
+   sized to fit there without scrolling — and scrolls inside itself rather
+   than getting cut off if it ever doesn't. */
 .mode-intro-card {
-  gap: 10px;
+  gap: 8px;
   width: 94%;
   max-width: 380px;
   max-height: 100%;
   overflow-y: auto;
-  padding: 14px 12px 12px;
+  padding: 12px 12px 10px;
 }
 
 .mode-intro-card h3 {
   margin: 0;
+  font-size: 15px;
 }
 
 .mode-intro-options {
   align-self: stretch;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .mode-intro-option {
@@ -39,7 +41,7 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px 8px 12px;
+  padding: 6px 10px 6px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: transparent;
@@ -89,7 +91,7 @@
 
 .mode-intro-option-desc {
   font-size: 12.5px;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--text-muted);
 }
 

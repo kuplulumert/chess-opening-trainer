@@ -46,7 +46,7 @@ export interface StepsCopy {
   introRunLabel: string;
   hintRunLabel: string;
   shownRunLabel: string;
-  introStatus: (runs: number) => string;
+  introStatus: (runs: number, fromStart: boolean) => string;
   hintStatus: string;
   recallStatus: (runs: number) => string;
   mistakeStatus: string;
@@ -63,11 +63,16 @@ export interface StepsCopy {
   beatStagePassed: (stage: number) => string;
   beatFinished: (learnedNow: boolean) => string;
   beatFinishedDetail: (learnedNow: boolean) => string;
-  beatNext: (label: string) => string;
+  // The chunked mode's own finish: every stage done, but the line has never
+  // been played from the start, so it isn't learned yet.
+  beatStepsDone: string;
+  beatStepsDoneDetail: string;
+  beatNext: (label: string, fromStart: boolean) => string;
   beatNextStage: (stage: number, moves: number) => string;
   beatTap: string;
   learned: string;
   refreshed: string;
+  stepsDone: string;
   toPractice: string;
 }
 
@@ -76,6 +81,7 @@ export interface ModeIntroCopy {
   title: string;
   recommended: string;
   steps: string;
+  stepsPlus: string;
   quiz: string;
   study: string;
 }
@@ -106,6 +112,42 @@ export interface MapCopy {
   dueDaysLabel: (daysOverdue: number) => string;
 }
 
+// The settings tab. One row per setting, each with a line saying what it
+// changes — room for the ones that need more than an icon can carry.
+export interface SettingsCopy {
+  navLabel: string;
+  title: string;
+  subtitle: string;
+  languageTitle: string;
+  languageHint: string;
+  themeTitle: string;
+  themeHint: string;
+  themeDark: string;
+  themeLight: string;
+  remindersTitle: string;
+  remindersHint: string;
+  on: string;
+  off: string;
+  guideTitle: string;
+  guideHint: string;
+  guideAction: string;
+  guideDone: string;
+  // Shown when the hidden five-tap gesture on the title flips the on-device
+  // touch diagnostics.
+  touchDebugOn: string;
+  touchDebugOff: string;
+}
+
+// Home's two quick-access openings.
+export interface MyOpeningsCopy {
+  navLabel: string;
+  title: string;
+  subtitle: (max: number) => string;
+  homeHintEmpty: string;
+  addSlot: string;
+  remove: string;
+}
+
 export interface Dictionary {
   appTitle: string;
   appSubtitle: string;
@@ -113,6 +155,8 @@ export interface Dictionary {
   searchAriaLabel: string;
   noOpeningsMatch: (query: string) => string;
   masteredTooltip: string;
+  /** The opening list that opens over the board and in a My openings slot. */
+  pickOpening: string;
 
   playAs: string;
   white: string;
@@ -121,6 +165,7 @@ export interface Dictionary {
   quiz: string;
   study: string;
   stepsMode: string;
+  stepsPlusMode: string;
   restart: string;
   stepBack: string;
   stepForward: string;
@@ -154,6 +199,8 @@ export interface Dictionary {
   notifications: NotificationsCopy;
   steps: StepsCopy;
   modeIntro: ModeIntroCopy;
+  settings: SettingsCopy;
+  myOpenings: MyOpeningsCopy;
 }
 
 const en: Dictionary = {
@@ -163,6 +210,7 @@ const en: Dictionary = {
   searchAriaLabel: "Search openings",
   noOpeningsMatch: (query) => `No openings match "${query}".`,
   masteredTooltip: "Completed as this color",
+  pickOpening: "Pick an opening",
 
   playAs: "Play as",
   white: "White",
@@ -170,6 +218,7 @@ const en: Dictionary = {
   mode: "Mode",
   quiz: "Practice",
   study: "Study",
+  stepsPlusMode: "Step by step +",
   stepsMode: "Step by step",
   restart: "Restart",
   stepBack: "Previous move",
@@ -193,7 +242,7 @@ const en: Dictionary = {
   switchToDark: "Switch to dark mode",
 
   howToUse:
-    "Pick a line on the left, then choose White or Black — you can drill the same opening from either side. A new line starts in Step by step, which teaches it three half-moves at a time. Practice makes you find each move first; Study shows where to move.",
+    "Pick a line on the left, then choose White or Black — you can drill the same opening from either side. A new line starts in Step by step, which teaches it three half-moves at a time and carries on from where you left off; Step by step + drills the same chunks but replays the whole line every rep. Practice makes you find each move first; Study shows where to move.",
   dismissGuide: "Dismiss",
 
   extendPrompt: "Want to go deeper into this line?",
@@ -298,8 +347,10 @@ const en: Dictionary = {
     introRunLabel: "Intro run",
     hintRunLabel: "Hint run",
     shownRunLabel: "This run shows moves and doesn't count",
-    introStatus: (runs) =>
-      `New moves are shown on the board. Then you'll replay the line from the start ${runs} times from memory.`,
+    introStatus: (runs, fromStart) =>
+      fromStart
+        ? `New moves are shown on the board. Then you'll replay the line from the start ${runs} times from memory.`
+        : `New moves are shown on the board. Then you'll play this chunk ${runs} times from memory.`,
     hintStatus: "The move you missed is shown. This run doesn't count.",
     recallStatus: (runs) => `No hints — ${runs} error-free reps in a row pass the stage.`,
     mistakeStatus: "Mistake — streak reset. This rep won't count.",
@@ -316,20 +367,57 @@ const en: Dictionary = {
     beatFinished: (learnedNow) => (learnedNow ? "Line learned!" : "Line refreshed"),
     beatFinishedDetail: (learnedNow) =>
       learnedNow ? "It's in your review queue — first review tomorrow" : "Your review schedule hasn't changed",
-    beatNext: (label) => `Next: ${label} · from the start`,
+    beatStepsDone: "Every stage done!",
+    beatStepsDoneDetail: "Now play the whole line from memory in Practice",
+    beatNext: (label, fromStart) =>
+      fromStart ? `Next: ${label} · from the start` : `Next: ${label}`,
     beatNextStage: (stage, moves) => `Stage ${stage}: ${moves} new move${moves === 1 ? "" : "s"}`,
     beatTap: "Tap to continue",
     learned: "Line learned — it's in your review queue, first review tomorrow.",
     refreshed: "Line refreshed. Your review schedule hasn't changed.",
+    stepsDone: "Every stage done — now play the line from the start in Practice.",
     toPractice: "Go to Practice",
   },
 
   modeIntro: {
     title: "How do you want to train?",
     recommended: "Recommended",
-    steps: "Learn it in 3-move chunks, with lots of reps.",
-    quiz: "Play the whole line from memory to test yourself.",
-    study: "Moves are shown — study straight through, no reps.",
+    steps: "3-move chunks, carrying on where you left off.",
+    stepsPlus: "Same chunks, but every rep replays the whole line.",
+    quiz: "Play the whole line from memory.",
+    study: "Moves are shown — one pass, no reps.",
+  },
+
+  settings: {
+    navLabel: "Settings",
+    title: "Settings",
+    subtitle: "Set the app up the way you like.",
+    languageTitle: "Language",
+    languageHint: "App text and opening names.",
+    themeTitle: "Appearance",
+    themeHint: "Dark is easier on the eyes; light is clearer in daylight.",
+    themeDark: "Dark",
+    themeLight: "Light",
+    remindersTitle: "Review reminder",
+    remindersHint: "A notification when lines are due for review.",
+    on: "On",
+    off: "Off",
+    guideTitle: "How-to tips",
+    guideHint: "The explanation boxes above the trainer and the skill map.",
+    guideAction: "Show again",
+    guideDone: "The tips are back on.",
+    touchDebugOn: "Touch diagnostics on.",
+    touchDebugOff: "Touch diagnostics off.",
+  },
+
+  myOpenings: {
+    navLabel: "My openings",
+    title: "My openings",
+    subtitle: (max) =>
+      `Keep ${max} openings here and they are one tap away whenever you open the app.`,
+    homeHintEmpty: "Pick two openings for one-tap access.",
+    addSlot: "Add an opening",
+    remove: "Remove",
   },
 };
 
@@ -340,6 +428,7 @@ const tr: Dictionary = {
   searchAriaLabel: "Açılış ara",
   noOpeningsMatch: (query) => `"${query}" ile eşleşen açılış yok.`,
   masteredTooltip: "Bu renkte tamamlandı",
+  pickOpening: "Açılış seç",
 
   playAs: "Taraf",
   white: "Beyaz",
@@ -347,6 +436,7 @@ const tr: Dictionary = {
   mode: "Mod",
   quiz: "Pratik",
   study: "Çalışma",
+  stepsPlusMode: "Adım adım +",
   stepsMode: "Adım adım",
   restart: "Baştan başla",
   stepBack: "Önceki hamle",
@@ -370,7 +460,7 @@ const tr: Dictionary = {
   switchToDark: "Koyu temaya geç",
 
   howToUse:
-    "Soldan bir açılış seç, sonra Beyaz ya da Siyah tarafı seç — aynı açılışı iki taraftan da çalışabilirsin. Yeni bir hat Adım adım modunda başlar ve üçer yarı hamle öğretilir. Pratik'te her hamleyi önce kendin bulursun; Çalışma'da nereye oynayacağın gösterilir.",
+    "Soldan bir açılış seç, sonra Beyaz ya da Siyah tarafı seç — aynı açılışı iki taraftan da çalışabilirsin. Yeni bir hat Adım adım modunda başlar: üçer yarı hamlelik parçaları kaldığın yerden çalışırsın. Adım adım + aynı parçaları çalıştırır ama her tekrarda hattı baştan oynatır. Pratik'te her hamleyi önce kendin bulursun; Çalışma'da nereye oynayacağın gösterilir.",
   dismissGuide: "Kapat",
 
   extendPrompt: "Bu açılışta biraz daha derine inmek ister misin?",
@@ -474,8 +564,10 @@ const tr: Dictionary = {
     introRunLabel: "Tanıtım turu",
     hintRunLabel: "İpuçlu tur",
     shownRunLabel: "Bu turda hamleler gösteriliyor, sayılmaz",
-    introStatus: (runs) =>
-      `Yeni hamleler tahtada gösteriliyor. Sonra hattı baştan ${runs} kez ezberden tekrar edeceksin.`,
+    introStatus: (runs, fromStart) =>
+      fromStart
+        ? `Yeni hamleler tahtada gösteriliyor. Sonra hattı baştan ${runs} kez ezberden tekrar edeceksin.`
+        : `Yeni hamleler tahtada gösteriliyor. Sonra bu parçayı ${runs} kez ezberden tekrar edeceksin.`,
     hintStatus: "Kaçırdığın hamle gösteriliyor. Bu tur sayılmaz.",
     recallStatus: (runs) => `İpucu yok — üst üste ${runs} hatasız tekrar aşamayı geçirir.`,
     mistakeStatus: "Hata — seri sıfırlandı, bu tekrar sayılmayacak.",
@@ -492,20 +584,57 @@ const tr: Dictionary = {
     beatFinished: (learnedNow) => (learnedNow ? "Hat öğrenildi!" : "Hat tazelendi"),
     beatFinishedDetail: (learnedNow) =>
       learnedNow ? "Tekrar kuyruğuna girdi — ilk tekrar yarın" : "Tekrar takvimin değişmedi",
-    beatNext: (label) => `Sıradaki: ${label} · baştan`,
+    beatStepsDone: "Tüm aşamalar tamam!",
+    beatStepsDoneDetail: "Şimdi Pratik'te hattı baştan sona oyna",
+    beatNext: (label, fromStart) =>
+      fromStart ? `Sıradaki: ${label} · baştan` : `Sıradaki: ${label}`,
     beatNextStage: (stage, moves) => `Aşama ${stage}: ${moves} yeni hamle`,
     beatTap: "Devam için dokun",
     learned: "Hat öğrenildi — tekrar kuyruğuna girdi, ilk tekrar yarın.",
     refreshed: "Hat tazelendi. Tekrar takvimin değişmedi.",
+    stepsDone: "Tüm aşamalar bitti — şimdi Pratik'te hattı baştan sona oyna.",
     toPractice: "Pratik'e geç",
   },
 
   modeIntro: {
     title: "Nasıl çalışmak istersin?",
     recommended: "Önerilen",
-    steps: "3 hamlelik parçalarla, bol tekrarla öğren.",
-    quiz: "Tüm hattı ezberden oyna, kendini sına.",
-    study: "Hamleler gösterilir; tekrarsız, kesintisiz çalış.",
+    steps: "3 hamlelik parçalar, kaldığın yerden devam.",
+    stepsPlus: "Aynı parçalar, ama her tekrar hattı baştan oynatır.",
+    quiz: "Tüm hattı ezberden oyna.",
+    study: "Hamleler gösterilir; tekrarsız.",
+  },
+
+  settings: {
+    navLabel: "Ayarlar",
+    title: "Ayarlar",
+    subtitle: "Uygulamayı kendine göre ayarla.",
+    languageTitle: "Language",
+    languageHint: "Uygulama metinleri ve açılış adları.",
+    themeTitle: "Görünüm",
+    themeHint: "Koyu tema gözü yormaz, açık tema gündüz daha net.",
+    themeDark: "Koyu",
+    themeLight: "Açık",
+    remindersTitle: "Tekrar hatırlatıcısı",
+    remindersHint: "Tekrar zamanı gelen hatlar için bildirim gönderir.",
+    on: "Açık",
+    off: "Kapalı",
+    guideTitle: "Kullanım ipuçları",
+    guideHint: "Antrenör ve yetenek haritası ekranlarının üstündeki açıklama kutuları.",
+    guideAction: "Tekrar göster",
+    guideDone: "İpuçları yeniden açıldı.",
+    touchDebugOn: "Dokunma tanılaması açık.",
+    touchDebugOff: "Dokunma tanılaması kapalı.",
+  },
+
+  myOpenings: {
+    navLabel: "Açılışlarım",
+    title: "Açılışlarım",
+    subtitle: (max) =>
+      `Burada ${max} açılış tutabilirsin; uygulamayı açar açmaz tek dokunuşla oradalar.`,
+    homeHintEmpty: "İki açılış seç, tek dokunuşla ulaş.",
+    addSlot: "Açılış ekle",
+    remove: "Kaldır",
   },
 };
 

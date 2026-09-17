@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { TrainerMode } from "../hooks/useOpeningTrainer";
+import { isStepMode, type TrainerMode } from "../hooks/useOpeningTrainer";
 import type { Dictionary } from "../i18n/translations";
 import { MovePurpose } from "./MovePurpose";
 
@@ -15,8 +15,10 @@ interface InfoPanelProps {
   /** Adım Adım: every stage passed. Each of its runs ends "done" on its own,
    *  so `isDone` alone would flash the finish card after every run. */
   stepsFinished: boolean;
-  /** Whether that finish just taught the line, or refreshed a learned one. */
-  stepsLearnedNow: boolean;
+  /** Which finish this is: the line just learned, a learned line
+   *  refreshed, or the chunked mode through every stage — not learned yet,
+   *  since its runs never covered the line from the start. */
+  stepsOutcome: "learned" | "refreshed" | "done";
   t: Dictionary;
   onRestart: () => void;
   onNextLine: () => void;
@@ -43,14 +45,14 @@ export function InfoPanel({
   whiteStrategy,
   blackStrategy,
   stepsFinished,
-  stepsLearnedNow,
+  stepsOutcome,
   t,
   onRestart,
   onNextLine,
   onExtend,
   onGoToPractice,
 }: InfoPanelProps) {
-  const showFinishCard = mode === "steps" ? stepsFinished : isDone;
+  const showFinishCard = isStepMode(mode) ? stepsFinished : isDone;
 
   // Finishing a line adds a third card to a panel sized for two, so the
   // "what next" buttons start out below the fold. Bring them into view
@@ -86,11 +88,15 @@ export function InfoPanel({
         </div>
       )}
 
-      {mode === "steps"
+      {isStepMode(mode)
         ? stepsFinished && (
             <div className="info-card">
               <p className="status-line status-done">
-                {stepsLearnedNow ? t.steps.learned : t.steps.refreshed}
+                {stepsOutcome === "learned"
+                  ? t.steps.learned
+                  : stepsOutcome === "done"
+                    ? t.steps.stepsDone
+                    : t.steps.refreshed}
               </p>
               <div className="button-row">
                 <button type="button" className="secondary-button" onClick={onGoToPractice}>
